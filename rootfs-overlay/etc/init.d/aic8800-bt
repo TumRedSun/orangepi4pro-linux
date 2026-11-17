@@ -1,0 +1,23 @@
+#!/sbin/openrc-run
+description="Attach AIC8800 Bluetooth controller on ttyS1 (hciattach_opi)"
+
+depend() {
+	after udev-trigger localmount
+	before bluetooth
+}
+
+start() {
+	ebegin "Attaching AIC8800 Bluetooth on ttyS1"
+	(
+		while [ ! -e /proc/bluetooth/sleep/btwrite ]; do sleep 1; done
+		echo 1 > /proc/bluetooth/sleep/btwrite
+		exec /usr/bin/hciattach_opi -n -s 1500000 /dev/ttyS1 aic
+	) &
+	eend 0
+}
+
+stop() {
+	ebegin "Detaching AIC8800 Bluetooth"
+	pkill -TERM -f "hciattach_opi -n -s 1500000 /dev/ttyS1" 2>/dev/null
+	eend 0
+}

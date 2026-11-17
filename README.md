@@ -40,17 +40,6 @@ Vermagic of the current build: `7.3.0-ge369c7b14bbe-dirty`
 `f47d22362`, applies the patch series, cross-builds `Image` + dtb +
 `modules`, then publishes a rolling `nightly` release with the artifacts.
 
-## Where everything lives locally (workstation `~/`)
-
-| path | what |
-|---|---|
-| `~/orangepi4pro-linux/` | THIS repo (backup/restore package) |
-| `~/a733-kernel/` | standalone copy of the kernel git repo (branch `a733-gpu`, 21 commits on upstream `f47d22362`, HEAD `00ba42eb2`) — full working tree, buildable |
-| `~/gpu-open/work/mainline/linux` | the live kernel working tree used for board builds (same content as `~/a733-kernel` HEAD + any in-flight edits) |
-| `~/gpu-open/work/mainline/build` | kernel build tree (`.config`, Image, Module.symvers) |
-| `~/gpu-open/work/aic-port/` | working dir for the AIC8800 port (`wfix/`, `vendor-src/`) |
-| `~/gpu-open/work/sunxi-drm-port/src` | live sunxi-drm port tree (backed up here as `sunxi-drm-port/`) |
-| `~/gpu-open/apercel` | **separate project** (powervr/BXM GPU driver, github `TumRedSun/apercel`) — do not touch from this repo |
 
 Board side: NVMe rootfs is mounted on the (SD-booted) board at
 `/mnt/nvme-root`; modules live in

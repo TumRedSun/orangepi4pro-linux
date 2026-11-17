@@ -1,7 +1,7 @@
-From e33fe30bb9cb07092f986ddca43d5867b8b08f7f Mon Sep 17 00:00:00 2001
+From 0ca0169d4e8c8dc59b9d29dbc62cd7be4f40a487 Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Tue, 20 Oct 2026 15:51:57 +0000
-Subject: [PATCH 03/21] thermal: sun8i: Add support for the Allwinner A733 THS
+Subject: [PATCH 03/22] thermal: sun8i: Add support for the Allwinner A733 THS
 
 The A733 THS is H616-family compatible: five sensors, bus clock and
 reset, 24 MHz module clock, same register set and programming.
@@ -38,7 +38,7 @@ index 3e61689f6..65171951e 100644
      then:
        properties:
 diff --git a/drivers/thermal/sun8i_thermal.c b/drivers/thermal/sun8i_thermal.c
-index 284684137..f3e65c9bc 100644
+index b3f551e02..45a7a0687 100644
 --- a/drivers/thermal/sun8i_thermal.c
 +++ b/drivers/thermal/sun8i_thermal.c
 @@ -25,7 +25,7 @@
@@ -170,6 +170,3 @@ index 284684137..f3e65c9bc 100644
  	{ /* sentinel */ },
  };
  MODULE_DEVICE_TABLE(of, of_ths_match);
--- 
-2.55.0
-

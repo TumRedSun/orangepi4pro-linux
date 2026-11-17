@@ -1,7 +1,7 @@
-From 81ba2cd770404e0bc048b702a269507d4eecb84d Mon Sep 17 00:00:00 2001
+From e8a680bc11e88ead27d632b1ed9ef2326124df60 Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Wed, 21 Oct 2026 13:51:29 +0000
-Subject: [PATCH 14/21] ARM: dts: sunxi: enable SerDes and PCIe on the OrangePi
+Subject: [PATCH 14/22] ARM: dts: sunxi: enable SerDes and PCIe on the OrangePi
  4 Pro
 
 ---
@@ -62,6 +62,3 @@ index 26d24d939..745bbdbc7 100644
  &mmc0 {
  	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
  	bus-width = <4>;
--- 
-2.55.0
-

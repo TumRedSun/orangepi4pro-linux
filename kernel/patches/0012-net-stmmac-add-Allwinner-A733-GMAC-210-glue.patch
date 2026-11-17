@@ -1,7 +1,7 @@
-From 0272066c218d6ded300e2de844c7ce6b3d28b29d Mon Sep 17 00:00:00 2001
+From b14cbb33a230aab3c1de32812e6db28dc2fd88fe Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Wed, 21 Oct 2026 06:02:02 +0000
-Subject: [PATCH 12/21] net: stmmac: add Allwinner A733 GMAC-210 glue
+Subject: [PATCH 12/22] net: stmmac: add Allwinner A733 GMAC-210 glue
 
 ---
  drivers/net/ethernet/stmicro/stmmac/Kconfig   |  11 ++
@@ -11,10 +11,10 @@ Subject: [PATCH 12/21] net: stmmac: add Allwinner A733 GMAC-210 glue
  create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sun60i.c
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-index e3dd5adda..e084d9870 100644
+index c6559e749..974873794 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
 +++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
-@@ -309,6 +309,17 @@ config DWMAC_SUN55I
+@@ -310,6 +310,17 @@ config DWMAC_SUN55I
  	  stmmac device driver. This driver is used for A523/T527
  	  GMAC200 ethernet controller.
  
@@ -33,7 +33,7 @@ index e3dd5adda..e084d9870 100644
  	tristate "T-HEAD dwmac support"
  	depends on OF && (ARCH_THEAD || COMPILE_TEST)
 diff --git a/drivers/net/ethernet/stmicro/stmmac/Makefile b/drivers/net/ethernet/stmicro/stmmac/Makefile
-index a1cea2f57..1f727422e 100644
+index b16a456b7..a106d6d1d 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/Makefile
 +++ b/drivers/net/ethernet/stmicro/stmmac/Makefile
 @@ -35,6 +35,7 @@ obj-$(CONFIG_DWMAC_STM32)	+= dwmac-stm32.o
@@ -42,8 +42,8 @@ index a1cea2f57..1f727422e 100644
  obj-$(CONFIG_DWMAC_SUN55I)	+= dwmac-sun55i.o
 +obj-$(CONFIG_DWMAC_SUN60I)	+= dwmac-sun60i.o
  obj-$(CONFIG_DWMAC_THEAD)	+= dwmac-thead.o
+ obj-$(CONFIG_DWMAC_ULTRARISC)	+= dwmac-ultrarisc.o
  obj-$(CONFIG_DWMAC_DWC_QOS_ETH)	+= dwmac-dwc-qos-eth.o
- obj-$(CONFIG_DWMAC_INTEL_PLAT)	+= dwmac-intel-plat.o
 diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-sun60i.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-sun60i.c
 new file mode 100644
 index 000000000..26c0b783f
@@ -206,6 +206,3 @@ index 000000000..26c0b783f
 +MODULE_AUTHOR("tumredsun <tumredsun@localhost>");
 +MODULE_DESCRIPTION("Allwinner sun60i GMAC-210 specific glue layer");
 +MODULE_LICENSE("GPL");
--- 
-2.55.0
-

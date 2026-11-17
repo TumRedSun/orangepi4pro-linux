@@ -1,7 +1,7 @@
-From 7b47969ae8584f5db1874a8e5c4a7f09814350d0 Mon Sep 17 00:00:00 2001
+From 9cb44f44ee18ab3cc9e7c74239466956102156c5 Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Wed, 21 Oct 2026 22:12:18 +0000
-Subject: [PATCH 15/21] arm64/a733 bringup: head.S pre-MMU UART trace + cache
+Subject: [PATCH 15/22] arm64/a733 bringup: head.S pre-MMU UART trace + cache
  fix; DT memory@40000000 fallback
 
 head.S: dcache_inval_poc -> dcache_clean_poc for init_pg_dir/reserved/init_idmap (PMU fix, cf. jonas5 opi4pro-7.1.5); dsb+isb before and after set_sctlr_el1; pre-MMU UART debug puts (0x02500000, A/B/B1/B2/B4/M1). dts: add /memory@40000000 fallback node (workaround for zero-RAM boot until completion_id_init_idmap is reliable).
@@ -33,7 +33,7 @@ index 745bbdbc7..1a0371d58 100644
  		serial0 = &uart0;
  		mmc0 = &mmc0;
 diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
-index 87a822e5c..9eaec3112 100644
+index d6ba3c0af..9700a8e3e 100644
 --- a/arch/arm64/kernel/head.S
 +++ b/arch/arm64/kernel/head.S
 @@ -82,7 +82,14 @@
@@ -91,7 +91,7 @@ index 87a822e5c..9eaec3112 100644
  	b	__primary_switch
  SYM_CODE_END(primary_entry)
  
-@@ -467,6 +481,10 @@ SYM_FUNC_START(__enable_mmu)
+@@ -466,6 +480,10 @@ SYM_FUNC_START(__enable_mmu)
  	msr	ttbr0_el1, x2			// load TTBR0
  	load_ttbr1 x1, x1, x3
  
@@ -102,7 +102,7 @@ index 87a822e5c..9eaec3112 100644
  	set_sctlr_el1	x0
  
  	ret
-@@ -506,6 +524,19 @@ SYM_FUNC_START_LOCAL(__no_granule_support)
+@@ -505,6 +523,19 @@ SYM_FUNC_START_LOCAL(__no_granule_support)
  SYM_FUNC_END(__no_granule_support)
  
  SYM_FUNC_START_LOCAL(__primary_switch)
@@ -123,10 +123,10 @@ index 87a822e5c..9eaec3112 100644
  	adrp	x2, __pi_init_idmap_pg_dir
  	bl	__enable_mmu
 diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 29c6100f0..164816580 100644
+index a707deba6..e8d3f8f67 100644
 --- a/arch/arm64/kernel/setup.c
 +++ b/arch/arm64/kernel/setup.c
-@@ -35,6 +35,7 @@
+@@ -36,6 +36,7 @@
  
  #include <asm/acpi.h>
  #include <asm/fixmap.h>
@@ -170,7 +170,7 @@ index 29c6100f0..164816580 100644
  static inline bool cpu_can_disable(unsigned int cpu)
  {
 diff --git a/init/main.c b/init/main.c
-index 31f2bf549..13818a327 100644
+index 7b0c8c34e..8a5c818a6 100644
 --- a/init/main.c
 +++ b/init/main.c
 @@ -41,6 +41,7 @@
@@ -181,7 +181,7 @@ index 31f2bf549..13818a327 100644
  #include <linux/smp.h>
  #include <linux/profile.h>
  #include <linux/kfence.h>
-@@ -989,6 +990,7 @@ void start_kernel(void)
+@@ -1046,6 +1047,7 @@ void start_kernel(void)
  	char *command_line;
  	char *after_dashes;
  
@@ -189,6 +189,3 @@ index 31f2bf549..13818a327 100644
  	set_task_stack_end_magic(&init_task);
  	smp_setup_processor_id();
  	debug_objects_early_init();
--- 
-2.55.0
-

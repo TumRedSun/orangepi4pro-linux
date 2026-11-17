@@ -1,7 +1,7 @@
-From 0194277a69a0d5e9135d6730eb175aa3ebf3eb51 Mon Sep 17 00:00:00 2001
+From 4edc2bcef353d8ca7740f602e98ff6b4617430c6 Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Wed, 21 Oct 2026 05:32:35 +0000
-Subject: [PATCH 09/21] PCI: dwc: add Allwinner A733 PCIe host driver
+Subject: [PATCH 09/22] PCI: dwc: add Allwinner A733 PCIe host driver
 
 ---
  drivers/pci/controller/dwc/Kconfig            |  13 +
@@ -11,7 +11,7 @@ Subject: [PATCH 09/21] PCI: dwc: add Allwinner A733 PCIe host driver
  create mode 100644 drivers/pci/controller/dwc/pcie-sun60i-a733.c
 
 diff --git a/drivers/pci/controller/dwc/Kconfig b/drivers/pci/controller/dwc/Kconfig
-index dcfbe7e22..98fa6febf 100644
+index 0a0d56fcf..b6f1a3181 100644
 --- a/drivers/pci/controller/dwc/Kconfig
 +++ b/drivers/pci/controller/dwc/Kconfig
 @@ -455,6 +455,19 @@ config PCIE_SPACEMIT_K1
@@ -489,6 +489,3 @@ index 000000000..7e683c220
 +MODULE_AUTHOR("tumredsun <tumredsun@localhost>");
 +MODULE_DESCRIPTION("Allwinner A733 DesignWare PCIe host driver");
 +MODULE_LICENSE("GPL");
--- 
-2.55.0
-

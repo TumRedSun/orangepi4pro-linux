@@ -1,7 +1,7 @@
-From 96442efb0dc096c770fec47503a3df9ea56a8af3 Mon Sep 17 00:00:00 2001
+From 1ce51ec99a38d665fea3246620294049aabc6350 Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Thu, 22 Oct 2026 11:05:27 +0000
-Subject: [PATCH 16/21] arm64/a733 bringup: keep x0 (SCTLR) in
+Subject: [PATCH 16/22] arm64/a733 bringup: keep x0 (SCTLR) in
  __primary_switch; uart_putc uses scratch regs
 
 The extra dcache_clean_poc calls added in 7b47969ae clobbered x0
@@ -22,7 +22,7 @@ reaches start_kernel and boots to the rootfs mount.
  1 file changed, 3 insertions(+), 13 deletions(-)
 
 diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
-index 9eaec3112..114b2ae84 100644
+index 9700a8e3e..88ab6ab7a 100644
 --- a/arch/arm64/kernel/head.S
 +++ b/arch/arm64/kernel/head.S
 @@ -83,9 +83,9 @@
@@ -38,7 +38,7 @@ index 9eaec3112..114b2ae84 100644
  	.endm
  
  SYM_CODE_START(primary_entry)
-@@ -527,16 +527,6 @@ SYM_FUNC_START_LOCAL(__primary_switch)
+@@ -526,16 +526,6 @@ SYM_FUNC_START_LOCAL(__primary_switch)
  	uart_putc 'B'
  	uart_putc '4'					// A733 debug: enabling MMU
  
@@ -55,6 +55,3 @@ index 9eaec3112..114b2ae84 100644
  	adrp	x1, reserved_pg_dir
  	adrp	x2, __pi_init_idmap_pg_dir
  	bl	__enable_mmu
--- 
-2.55.0
-

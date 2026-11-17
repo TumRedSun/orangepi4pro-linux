@@ -1,7 +1,7 @@
-From e369c7b14bbef873939e16956f7e85576643b33c Mon Sep 17 00:00:00 2001
+From 5b6b6ef36ff23ca3d4cc0ed28aac14ea6f0b269c Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Sat, 7 Nov 2026 12:13:59 +0000
-Subject: [PATCH 20/21] stmmac/dwmac-sun60i: snps,dwmac-5.20 compat + EXT gmii
+Subject: [PATCH 20/22] stmmac/dwmac-sun60i: snps,dwmac-5.20 compat + EXT gmii
  clock + PHY reset - MDIO was reading wrong core type (DWMAC100 vs real GMAC4,
  Synopsys 0x53) dts/opi4pro: drop init=/bin/sh, restore normal sysvinit/OpenRC
  boot
@@ -23,14 +23,13 @@ Subject: [PATCH 20/21] stmmac/dwmac-sun60i: snps,dwmac-5.20 compat + EXT gmii
  drivers/pci/controller/dwc/pcie-sun60i-a733.c | 329 +++++++++++++++++-
  .../phy/allwinner/phy-sun60i-a733-serdes.c    |  55 ++-
  drivers/pinctrl/sunxi/pinctrl-sun60i-a733-r.c |  16 +-
- drivers/pinctrl/sunxi/pinctrl-sun60i-a733.c   |   1 -
  drivers/pinctrl/sunxi/pinctrl-sunxi-dt.c      |   6 +
  drivers/pinctrl/sunxi/pinctrl-sunxi.c         |  44 ++-
  drivers/pmdomain/sunxi/sun55i-pck600.c        |   6 +
  include/linux/a733-snap.h                     |  66 ++++
  init/do_mounts.c                              |  22 ++
  init/main.c                                   | 148 +++++++-
- 23 files changed, 852 insertions(+), 39 deletions(-)
+ 22 files changed, 852 insertions(+), 38 deletions(-)
  create mode 100644 include/linux/a733-snap.h
 
 diff --git a/arch/arm64/boot/dts/allwinner/sun60i-a733-orangepi-4-pro.dts b/arch/arm64/boot/dts/allwinner/sun60i-a733-orangepi-4-pro.dts
@@ -71,7 +70,7 @@ index 1cce17c13..76da77b04 100644
  			      <0x4508000 0x1000>;
  			interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>,
 diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
-index 375a80bdb..e9926e31e 100644
+index f531f383b..bbfe6aac1 100644
 --- a/arch/arm64/kernel/head.S
 +++ b/arch/arm64/kernel/head.S
 @@ -84,7 +84,12 @@
@@ -88,7 +87,7 @@ index 375a80bdb..e9926e31e 100644
  	str	w17, [x16]
  	.endm
  
-@@ -487,13 +492,17 @@ SYM_FUNC_START(__enable_mmu)
+@@ -486,13 +491,17 @@ SYM_FUNC_START(__enable_mmu)
  	msr	ttbr0_el1, x2			// load TTBR0
  	load_ttbr1 x1, x1, x3
  
@@ -124,10 +123,10 @@ index ba539c110..3550cf818 100644
  }
  
 diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index dc0e7935c..ca78a76fa 100644
+index 1f9ae3d6c..943e9927c 100644
 --- a/arch/arm64/kernel/setup.c
 +++ b/arch/arm64/kernel/setup.c
-@@ -27,6 +27,7 @@
+@@ -28,6 +28,7 @@
  #include <linux/proc_fs.h>
  #include <linux/memblock.h>
  #include <linux/of_fdt.h>
@@ -286,7 +285,7 @@ index dc0e7935c..ca78a76fa 100644
  	paging_init();
  	a733_fix_putc('P'); a733_fix_putc('2');
 diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index a61dc3016..668039dde 100644
+index 014b163ce..be14607fe 100644
 --- a/arch/arm64/kernel/smp.c
 +++ b/arch/arm64/kernel/smp.c
 @@ -201,6 +201,8 @@ asmlinkage notrace void secondary_start_kernel(void)
@@ -299,7 +298,7 @@ index a61dc3016..668039dde 100644
  	 * All kernel threads share the same mm context; grab a
  	 * reference and switch to it.
 diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 4c0c37399..6ba9814fa 100644
+index cbe05197d..57a3e3428 100644
 --- a/drivers/base/core.c
 +++ b/drivers/base/core.c
 @@ -13,6 +13,7 @@
@@ -337,7 +336,7 @@ index 4c0c37399..6ba9814fa 100644
  		if (!device_link_test(link, DL_FLAG_MANAGED))
  			continue;
 diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index f6525a7ee..9aa39c2e9 100644
+index 521232519..dba92f3fd 100644
 --- a/drivers/base/dd.c
 +++ b/drivers/base/dd.c
 @@ -20,6 +20,7 @@
@@ -348,7 +347,7 @@ index f6525a7ee..9aa39c2e9 100644
  #include <linux/init.h>
  #include <linux/module.h>
  #include <linux/kthread.h>
-@@ -655,6 +656,8 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
+@@ -656,6 +657,8 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
  			   !drv->suppress_bind_attrs;
  	int ret, link_ret;
  
@@ -357,7 +356,7 @@ index f6525a7ee..9aa39c2e9 100644
  	if (defer_all_probes) {
  		/*
  		 * Value of defer_all_probes can be set only by
-@@ -665,10 +668,15 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
+@@ -666,10 +669,15 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
  		return -EPROBE_DEFER;
  	}
  
@@ -373,7 +372,7 @@ index f6525a7ee..9aa39c2e9 100644
  	dev_dbg(dev, "bus: '%s': %s: probing driver %s with device\n",
  		drv->bus->name, __func__, drv->name);
  	if (!list_empty(&dev->devres_head)) {
-@@ -685,12 +693,16 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
+@@ -686,12 +694,16 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
  	if (ret)
  		goto pinctrl_bind_failed;
  
@@ -390,7 +389,7 @@ index f6525a7ee..9aa39c2e9 100644
  	ret = driver_sysfs_add(dev);
  	if (ret) {
  		dev_err(dev, "%s: driver_sysfs_add failed\n", __func__);
-@@ -703,7 +715,10 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
+@@ -704,7 +716,10 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
  			goto probe_failed;
  	}
  
@@ -401,7 +400,7 @@ index f6525a7ee..9aa39c2e9 100644
  	if (ret) {
  		/*
  		 * If fw_devlink_best_effort is active (denoted by -EAGAIN), the
-@@ -753,7 +768,9 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
+@@ -754,7 +769,9 @@ static int really_probe(struct device *dev, const struct device_driver *drv)
  	if (dev->pm_domain && dev->pm_domain->sync)
  		dev->pm_domain->sync(dev);
  
@@ -412,10 +411,10 @@ index f6525a7ee..9aa39c2e9 100644
  		drv->bus->name, __func__, drv->name);
  	goto done;
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index fef87167a..b9bc65aec 100644
+index 4d2cc86bf..5eff0ca3c 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -1247,6 +1247,15 @@ int clk_prepare(struct clk *clk)
+@@ -1249,6 +1249,15 @@ int clk_prepare(struct clk *clk)
  }
  EXPORT_SYMBOL_GPL(clk_prepare);
  
@@ -431,7 +430,7 @@ index fef87167a..b9bc65aec 100644
  static void clk_core_disable(struct clk_core *core)
  {
  	lockdep_assert_held(&enable_lock);
-@@ -1254,6 +1263,10 @@ static void clk_core_disable(struct clk_core *core)
+@@ -1256,6 +1265,10 @@ static void clk_core_disable(struct clk_core *core)
  	if (!core)
  		return;
  
@@ -442,7 +441,7 @@ index fef87167a..b9bc65aec 100644
  	if (WARN(core->enable_count == 0, "%s already disabled\n", core->name))
  		return;
  
-@@ -1313,6 +1326,10 @@ static int clk_core_enable(struct clk_core *core)
+@@ -1315,6 +1328,10 @@ static int clk_core_enable(struct clk_core *core)
  	if (!core)
  		return 0;
  
@@ -509,7 +508,7 @@ index 26c0b783f..b8846ae6e 100644
  		break;
  	case PHY_INTERFACE_MODE_RMII:
 diff --git a/drivers/pci/controller/dwc/pcie-designware-host.c b/drivers/pci/controller/dwc/pcie-designware-host.c
-index f5a38e6fd..20d42f939 100644
+index bbb02458a..b6c12482d 100644
 --- a/drivers/pci/controller/dwc/pcie-designware-host.c
 +++ b/drivers/pci/controller/dwc/pcie-designware-host.c
 @@ -8,6 +8,7 @@
@@ -544,29 +543,29 @@ index f5a38e6fd..20d42f939 100644
  		ret = pp->ops->init(pp);
  		if (ret)
  			goto err_free_ecam;
-@@ -1165,9 +1169,11 @@ int dw_pcie_setup_rc(struct dw_pcie_rp *pp)
+@@ -1178,9 +1182,11 @@ int dw_pcie_setup_rc(struct dw_pcie_rp *pp)
  	/* Program correct class for RC */
  	dw_pcie_writew_dbi(pci, PCI_CLASS_DEVICE, PCI_CLASS_BRIDGE_PCI);
  
--	val = dw_pcie_readl_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL);
--	val |= PORT_LOGIC_SPEED_CHANGE;
--	dw_pcie_writel_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL, val);
+-	val = dw_pcie_readl_dbi(pci, LINK_WIDTH_SPEED_CTRL);
+-	val |= SPEED_CHANGE;
+-	dw_pcie_writel_dbi(pci, LINK_WIDTH_SPEED_CTRL, val);
 +	if (!pp->skip_speed_change) {
-+		val = dw_pcie_readl_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL);
-+		val |= PORT_LOGIC_SPEED_CHANGE;
-+		dw_pcie_writel_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL, val);
++		val = dw_pcie_readl_dbi(pci, LINK_WIDTH_SPEED_CTRL);
++		val |= SPEED_CHANGE;
++		dw_pcie_writel_dbi(pci, LINK_WIDTH_SPEED_CTRL, val);
 +	}
  
  	dw_pcie_dbi_ro_wr_dis(pci);
  
 diff --git a/drivers/pci/controller/dwc/pcie-designware.h b/drivers/pci/controller/dwc/pcie-designware.h
-index 0735ae940..9d46ae5dc 100644
+index 6d788aa00..f9a0e36a8 100644
 --- a/drivers/pci/controller/dwc/pcie-designware.h
 +++ b/drivers/pci/controller/dwc/pcie-designware.h
-@@ -471,6 +471,7 @@ struct dw_pcie_rp {
- 	bool			native_ecam;
- 	bool                    skip_l23_ready;
+@@ -472,6 +472,7 @@ struct dw_pcie_rp {
  	bool			skip_pwrctrl_off;
+ 	/* Set if the RC loses power during suspend */
+ 	bool                    suspend_poweroff;
 +	bool			skip_speed_change;
  };
  
@@ -1139,7 +1138,7 @@ index d942e689b..5ae5116c4 100644
  }
  
 diff --git a/drivers/pinctrl/sunxi/pinctrl-sun60i-a733-r.c b/drivers/pinctrl/sunxi/pinctrl-sun60i-a733-r.c
-index c72c17b6c..92163dd4f 100644
+index a6048f480..5303d05c1 100644
 --- a/drivers/pinctrl/sunxi/pinctrl-sun60i-a733-r.c
 +++ b/drivers/pinctrl/sunxi/pinctrl-sun60i-a733-r.c
 @@ -6,6 +6,7 @@
@@ -1157,7 +1156,7 @@ index c72c17b6c..92163dd4f 100644
 -	return sunxi_pinctrl_dt_table_init(pdev, a733_r_nr_bank_pins,
 -					   a733_r_irq_bank_muxes,
 -					   &a733_r_pinctrl_data,
--					   SUNXI_PINCTRL_NEW_REG_LAYOUT);
+-					   SUNXI_PINCTRL_NCAT2_REG_LAYOUT);
 +	int ret;
 +
 +	a733_pcie_snap("pM");
@@ -1165,27 +1164,15 @@ index c72c17b6c..92163dd4f 100644
 +	ret = sunxi_pinctrl_dt_table_init(pdev, a733_r_nr_bank_pins,
 +					  a733_r_irq_bank_muxes,
 +					  &a733_r_pinctrl_data,
-+					  SUNXI_PINCTRL_NEW_REG_LAYOUT);
++					  SUNXI_PINCTRL_NCAT2_REG_LAYOUT);
 +
 +	a733_pcie_snap("p3");
 +	return ret;
  }
  
  static const struct of_device_id a733_r_pinctrl_match[] = {
-diff --git a/drivers/pinctrl/sunxi/pinctrl-sun60i-a733.c b/drivers/pinctrl/sunxi/pinctrl-sun60i-a733.c
-index 493526853..a576bb7ec 100644
---- a/drivers/pinctrl/sunxi/pinctrl-sun60i-a733.c
-+++ b/drivers/pinctrl/sunxi/pinctrl-sun60i-a733.c
-@@ -27,7 +27,6 @@ static struct sunxi_pinctrl_desc a733_pinctrl_data = {
- 	.irq_banks = ARRAY_SIZE(a733_irq_bank_map),
- 	.irq_bank_map = a733_irq_bank_map,
- 	.io_bias_cfg_variant = BIAS_VOLTAGE_PIO_POW_MODE_CTL,
--	.pin_base = PB_BASE,
- };
- 
- static int a733_pinctrl_probe(struct platform_device *pdev)
 diff --git a/drivers/pinctrl/sunxi/pinctrl-sunxi-dt.c b/drivers/pinctrl/sunxi/pinctrl-sunxi-dt.c
-index 8bcd56659..36ea95754 100644
+index aeaf5534c..4f5f2afae 100644
 --- a/drivers/pinctrl/sunxi/pinctrl-sunxi-dt.c
 +++ b/drivers/pinctrl/sunxi/pinctrl-sunxi-dt.c
 @@ -25,6 +25,7 @@
@@ -1223,7 +1210,7 @@ index 8bcd56659..36ea95754 100644
  	 * Now iterate over all groups and add the respective function name
  	 * and mux values to each pin listed within.
 diff --git a/drivers/pinctrl/sunxi/pinctrl-sunxi.c b/drivers/pinctrl/sunxi/pinctrl-sunxi.c
-index 3d2a218b3..ced7629f1 100644
+index bf4ec4665..181d02959 100644
 --- a/drivers/pinctrl/sunxi/pinctrl-sunxi.c
 +++ b/drivers/pinctrl/sunxi/pinctrl-sunxi.c
 @@ -10,6 +10,7 @@
@@ -1234,7 +1221,7 @@ index 3d2a218b3..ced7629f1 100644
  #include <linux/clk.h>
  #include <linux/export.h>
  #include <linux/gpio/driver.h>
-@@ -1596,6 +1597,7 @@ static int sunxi_pinctrl_setup_debounce(struct sunxi_pinctrl *pctl,
+@@ -1591,6 +1592,7 @@ static int sunxi_pinctrl_setup_debounce(struct sunxi_pinctrl *pctl,
  	return 0;
  }
  
@@ -1242,16 +1229,16 @@ index 3d2a218b3..ced7629f1 100644
  int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
  				  const struct sunxi_pinctrl_desc *desc,
  				  unsigned long flags)
-@@ -1608,6 +1610,8 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
+@@ -1603,6 +1605,8 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
  	int i, ret, last_pin, pin_idx, nbanks;
  	struct clk *clk;
  
 +	a733_pcie_snap("p0");
 +
- 	pctl = devm_kzalloc(&pdev->dev, sizeof(*pctl), GFP_KERNEL);
+ 	pctl = devm_kzalloc_obj(&pdev->dev, *pctl);
  	if (!pctl)
  		return -ENOMEM;
-@@ -1661,6 +1665,8 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
+@@ -1655,6 +1659,8 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
  	if (IS_ERR(clk))
  		return PTR_ERR(clk);
  
@@ -1260,16 +1247,16 @@ index 3d2a218b3..ced7629f1 100644
  	/*
  	 * Seed the output latch shadow from the hardware so pins the
  	 * bootloader left in output mode keep their state; see
-@@ -1771,6 +1777,8 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
+@@ -1761,6 +1767,8 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
  			goto gpiochip_error;
  	}
  
 +	a733_pcie_snap("pB");
 +
- 	pctl->irq = devm_kcalloc(&pdev->dev,
- 				 pctl->desc->irq_banks,
- 				 sizeof(*pctl->irq),
-@@ -1809,20 +1817,42 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
+ 	pctl->irq = devm_kzalloc_objs(&pdev->dev, *pctl->irq,
+ 				      pctl->desc->irq_banks);
+ 	if (!pctl->irq) {
+@@ -1797,20 +1805,42 @@ int sunxi_pinctrl_init_with_flags(struct platform_device *pdev,
  
  	for (i = 0; i < pctl->desc->irq_banks; i++) {
  		/* Mask and clear all IRQs before registering a handler */
@@ -1320,7 +1307,7 @@ index 3d2a218b3..ced7629f1 100644
  	return 0;
  
 diff --git a/drivers/pmdomain/sunxi/sun55i-pck600.c b/drivers/pmdomain/sunxi/sun55i-pck600.c
-index 8a37d11b6..6265d3e81 100644
+index 81c3b18a3..6de6eeac7 100644
 --- a/drivers/pmdomain/sunxi/sun55i-pck600.c
 +++ b/drivers/pmdomain/sunxi/sun55i-pck600.c
 @@ -13,6 +13,7 @@
@@ -1430,7 +1417,7 @@ index 000000000..17e0103c4
 +
 +#endif
 diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 95e0b3a0f..67848c67f 100644
+index b088021b1..c3d753419 100644
 --- a/init/do_mounts.c
 +++ b/init/do_mounts.c
 @@ -6,6 +6,7 @@
@@ -1490,7 +1477,7 @@ index 95e0b3a0f..67848c67f 100644
  
  	if (init_pivot_root(".", ".")) {
 diff --git a/init/main.c b/init/main.c
-index e052a2155..0038ee1a2 100644
+index 27ce0db7f..93090d2b1 100644
 --- a/init/main.c
 +++ b/init/main.c
 @@ -12,6 +12,7 @@
@@ -1517,7 +1504,7 @@ index e052a2155..0038ee1a2 100644
  
  #define CREATE_TRACE_POINTS
  #include <trace/events/initcall.h>
-@@ -988,15 +991,51 @@ static void __init print_kernel_cmdline(const char *cmdline)
+@@ -1045,15 +1048,51 @@ static void __init print_kernel_cmdline(const char *cmdline)
  /* A733 debug: direct UART0 trace while the idmap is still installed */
  static noinline void __init a733_putc(char c)
  {
@@ -1571,7 +1558,7 @@ index e052a2155..0038ee1a2 100644
  asmlinkage __visible __init __no_sanitize_address __noreturn __no_stack_protector
  void start_kernel(void)
  {
-@@ -1205,6 +1244,8 @@ void start_kernel(void)
+@@ -1262,6 +1301,8 @@ void start_kernel(void)
  	arch_post_acpi_subsys_init();
  	kcsan_init();
  
@@ -1580,7 +1567,7 @@ index e052a2155..0038ee1a2 100644
  	/* Do the rest non-__init'ed, we're now alive */
  	rest_init();
  
-@@ -1570,20 +1611,111 @@ void __weak free_initmem(void)
+@@ -1627,20 +1668,111 @@ void __weak free_initmem(void)
  	free_initmem_default(POISON_FREE_INITMEM);
  }
  
@@ -1692,7 +1679,7 @@ index e052a2155..0038ee1a2 100644
  
  	system_state = SYSTEM_FREEING_INITMEM;
  	kprobe_free_init_mem();
-@@ -1592,6 +1724,7 @@ static int __ref kernel_init(void *unused)
+@@ -1649,6 +1781,7 @@ static int __ref kernel_init(void *unused)
  	exit_boot_config();
  	free_initmem();
  	mark_readonly();
@@ -1700,7 +1687,7 @@ index e052a2155..0038ee1a2 100644
  
  	/*
  	 * Kernel mappings are now finalized - update the userspace page-table
-@@ -1605,6 +1738,7 @@ static int __ref kernel_init(void *unused)
+@@ -1662,6 +1795,7 @@ static int __ref kernel_init(void *unused)
  	rcu_end_inkernel_boot();
  
  	do_sysctl_args();
@@ -1708,7 +1695,7 @@ index e052a2155..0038ee1a2 100644
  
  	if (ramdisk_execute_command) {
  		ret = run_init_process(ramdisk_execute_command);
-@@ -1674,17 +1808,22 @@ static noinline void __init kernel_init_freeable(void)
+@@ -1731,17 +1865,22 @@ static noinline void __init kernel_init_freeable(void)
  
  	rcu_assign_pointer(cad_pid, get_pid(task_pid(current)));
  
@@ -1731,7 +1718,7 @@ index e052a2155..0038ee1a2 100644
  
  	workqueue_init_topology();
  	async_init();
-@@ -1692,11 +1831,15 @@ static noinline void __init kernel_init_freeable(void)
+@@ -1749,11 +1888,15 @@ static noinline void __init kernel_init_freeable(void)
  	page_alloc_init_late();
  
  	do_basic_setup();
@@ -1747,7 +1734,7 @@ index e052a2155..0038ee1a2 100644
  
  	/*
  	 * check if there is an early userspace init.  If yes, let it do all
-@@ -1704,6 +1847,7 @@ static noinline void __init kernel_init_freeable(void)
+@@ -1761,6 +1904,7 @@ static noinline void __init kernel_init_freeable(void)
  	 */
  	int ramdisk_command_access;
  	ramdisk_command_access = init_eaccess(ramdisk_execute_command);
@@ -1755,6 +1742,3 @@ index e052a2155..0038ee1a2 100644
  	if (ramdisk_command_access != 0) {
  		if (ramdisk_execute_command_set)
  			pr_warn("check access for rdinit=%s failed: %i, ignoring\n",
--- 
-2.55.0
-

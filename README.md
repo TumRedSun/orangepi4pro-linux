@@ -13,9 +13,10 @@ NVMe rootfs (Gentoo/OpenRC), serial console on ttyS0.
 | `aic-port/wfix/` | `sunxi-wlan` helper module source (out-of-tree, needed by the AIC8800 wifi/bt port) |
 | `aic-port/vendor-src/` | pristine vendor AIC8800 tree (bsp/fdrv/btlpm) to patch |
 | `aic-port/PATCHES.md` | every fix applied to the AIC8800 sources for kernel 7.3 — the patched /tmp sources were lost, this is the recovery doc |
+| `sunxi-drm-port/` | out-of-tree port of the vendor display stack (DE/TCON/HDMI) to kernel 7.3 — see `sunxi-drm-port/NOTES.md` for the Kconfig-emulation fix and build/deploy state |
+| `prebuilt/` | the exact deployed `.ko` set (md5s recorded in `sunxi-drm-port/NOTES.md`); matches Image `da253ed6` / DTB `de54b62e` |
 
-The sunxi-drm (GPU/display) driver port is **not** here — it lives in its
-own repository.
+The Imagination GPU driver (powervr) port lives in its own repository.
 
 ## Rebuilding the kernel
 

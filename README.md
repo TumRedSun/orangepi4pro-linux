@@ -6,8 +6,9 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 > **This fork** rebases the kernel series from `f47d22362` (7.3.0) onto
 > `666539eecdf4`. See [Rebase to 7.4-rc3](#rebase-to-74-rc3) for what changed.
-> It also adds patches 0023–0027: **working Ethernet** and a **Debian SD-card
-> boot** (see [SD-card boot and Ethernet](#sd-card-boot-and-ethernet-patches-00230027)).
+> It also adds patches 0023–0028: **working Ethernet**, a **Debian SD-card
+> boot**, and the **BL31 memory reservation** (see
+> [SD-card boot and Ethernet](#sd-card-boot-and-ethernet-patches-00230028)).
 > The `prebuilt/` artifacts and the module paths below still describe the
 > **7.3** build deployed on the board.
 
@@ -15,7 +16,7 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 | path | what |
 |---|---|
-| `kernel/patches/` | patch series (27) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
+| `kernel/patches/` | patch series (28) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
 | `rootfs-overlay-debian-sd/` | Debian 13 SD-card setup for the mainline kernel: U-Boot script, `powervr` blacklist, and the `opi4pro-eth-power` service that powers the Ethernet PHY |
 | `configs/a733-orangepi4pro.config` | working kernel `.config` used for all board builds |
 | `aic-port/wfix/` | `sunxi-wlan` helper module source (out-of-tree, needed by the AIC8800 wifi/bt port) |
@@ -77,7 +78,7 @@ The series was rebased from `f47d22362` onto `666539eecdf4` (7.4-rc3+, 2026-11-1
   - the vendor driver's subclassed-state reset functions need a real port, so **HDMI is unavailable on this base** until then
 - `aic-port/`: not rebuilt, because the patched sources were lost (see `aic-port/PATCHES.md`). It must be rebuilt for the new vermagic.
 
-## SD-card boot and Ethernet (patches 0023–0027)
+## SD-card boot and Ethernet (patches 0023–0028)
 
 Tested on an OrangePi 4 Pro booting Debian 13 (Orange Pi OS trixie server
 image) from an SD card, with the kernel built from this series. Works: SD
@@ -92,6 +93,7 @@ not tested or don't work yet.
 | 0025 pinctrl | A733 `GPIO_POW_MOD_SEL` has a 2-bit field per bank (`11` = 1.8 V); the generic code wrote 1 bit with inverted meaning. No effect unless a `vcc-pX-supply` is set |
 | 0026 clk | the bringup clock trace prints at `pr_debug`, not `KERN_EMERG` (it flooded the console with SD card-detect polling) |
 | 0027 dts | new `sun60i-a733-orangepi-4-pro-sd.dts` (below) |
+| 0028 dtsi | reserve the vendor BL31 secure monitor at `0x48000000` (16 MiB, `no-map`). Without it Linux can allocate over BL31, and U-Boot can move an initrd onto it (the board then hangs after "Starting kernel") |
 
 **`sun60i-a733-orangepi-4-pro-sd.dts`** (the NVMe board dts is unchanged):
 - **SD:** PF0–PF5 muxed; `uart0` no longer claims PF2/PF4 (SD lines); `broken-cd` (PF6 card-detect caused an RCU stall); fixed 3.3 V `vmmc` (else "no support for card's volts").
@@ -109,6 +111,13 @@ not tested or don't work yet.
 driver for this PMIC (AXP318 per the schematic). `rootfs-overlay-debian-sd/`
 has a systemd oneshot, `opi4pro-eth-power`, that switches it on and
 re-probes the GMAC early in boot. A PMIC regulator driver would replace it.
+
+Booting with an initrd (for example Armbian) through the vendor U-Boot
+also needs, in the boot script, `setenv fdt_high 0xffffffff` and
+`setenv initrd_high 0xffffffff`, and a DTB with free space (`dtc -p`): U-Boot
+writes `bootargs` and the initrd range into `/chosen` and hangs with
+`FDT_ERR_NOSPACE` otherwise. Armbian `edge` images for this board work this
+way (github.com/ijiki16/build, branch `sun60iw2-mainline-edge`).
 
 Other findings, not fixed here:
 - The board's DCXO is **26 MHz**. `pll-ref` reads 22.15 MHz (= 24 × 24/26) because the dtsi's `osc24M` is 24 MHz, so PLL-derived rates are 13/12 off.

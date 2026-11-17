@@ -6,6 +6,8 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 > **This fork** rebases the kernel series from `f47d22362` (7.3.0) onto
 > `666539eecdf4`. See [Rebase to 7.4-rc3](#rebase-to-74-rc3) for what changed.
+> It also adds patches 0023–0027: **working Ethernet** and a **Debian SD-card
+> boot** (see [SD-card boot and Ethernet](#sd-card-boot-and-ethernet-patches-00230027)).
 > The `prebuilt/` artifacts and the module paths below still describe the
 > **7.3** build deployed on the board.
 
@@ -13,7 +15,8 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 | path | what |
 |---|---|
-| `kernel/patches/` | patch series (22) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
+| `kernel/patches/` | patch series (27) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
+| `rootfs-overlay-debian-sd/` | Debian 13 SD-card setup for the mainline kernel: U-Boot script, `powervr` blacklist, and the `opi4pro-eth-power` service that powers the Ethernet PHY |
 | `configs/a733-orangepi4pro.config` | working kernel `.config` used for all board builds |
 | `aic-port/wfix/` | `sunxi-wlan` helper module source (out-of-tree, needed by the AIC8800 wifi/bt port) |
 | `aic-port/vendor-src/` | pristine vendor AIC8800 tree (bsp/fdrv/btlpm) to patch |
@@ -73,6 +76,47 @@ The series was rebased from `f47d22362` onto `666539eecdf4` (7.4-rc3+, 2026-11-1
   - mainline also removed `drm_plane_funcs.reset` / `drm_crtc_funcs.reset` (now `.atomic_create_state`), `__drm_atomic_helper_{plane,crtc}_reset` and `drm_simple_encoder_init`
   - the vendor driver's subclassed-state reset functions need a real port, so **HDMI is unavailable on this base** until then
 - `aic-port/`: not rebuilt, because the patched sources were lost (see `aic-port/PATCHES.md`). It must be rebuilt for the new vermagic.
+
+## SD-card boot and Ethernet (patches 0023–0027)
+
+Tested on an OrangePi 4 Pro booting Debian 13 (Orange Pi OS trixie server
+image) from an SD card, with the kernel built from this series. Works: SD
+rootfs, serial console, NVMe, **Ethernet** (100 Mb/s link, limited by the
+switch used; DHCP, ping and SSH). Gigabit, HDMI, Wi-Fi/BT and the GPU were
+not tested or don't work yet.
+
+| Patch | What |
+|---|---|
+| 0023 dts | GMAC0 resets: `stmmaceth` = `RST_BUS_GMAC0_AXI`, `ahb` = `RST_BUS_GMAC0` (vendor BSP roles), so stmmac no longer pulses the bus reset after the glue was programmed |
+| 0024 dwmac-sun60i | write the syscfg register **after** ungating the bus clock and releasing the bus reset (it stayed at reset value `0x8000` = internal EPHY), and enable the `phy` 25 MHz clock |
+| 0025 pinctrl | A733 `GPIO_POW_MOD_SEL` has a 2-bit field per bank (`11` = 1.8 V); the generic code wrote 1 bit with inverted meaning. No effect unless a `vcc-pX-supply` is set |
+| 0026 clk | the bringup clock trace prints at `pr_debug`, not `KERN_EMERG` (it flooded the console with SD card-detect polling) |
+| 0027 dts | new `sun60i-a733-orangepi-4-pro-sd.dts` (below) |
+
+**`sun60i-a733-orangepi-4-pro-sd.dts`** (the NVMe board dts is unchanged):
+- **SD:** PF0–PF5 muxed; `uart0` no longer claims PF2/PF4 (SD lines); `broken-cd` (PF6 card-detect caused an RCU stall); fixed 3.3 V `vmmc` (else "no support for card's volts").
+- **GPU:** disabled. udev autoloads `powervr.ko` and the board hangs about 8 s into boot.
+- **Ethernet (YT8531C):**
+  - `snps,clk-csr = <4>` (the CSR clock is 200 MHz AHB; the auto choice gave a 12.5 MHz MDC)
+  - `phy-handle`
+  - PHY reset on **PH16**: the board dts's PA14 doesn't exist, since the A733 has no port A
+  - `motorcomm,clk-out-frequency-hz = <125000000>` (the GMAC's TX clock comes from the PHY)
+  - `phy-mode = "rgmii-id"` with `rx-internal-delay-ps = <1900>` and `tx-internal-delay-ps = <150>`, matching the vendor kernel's PHY registers
+- **PMIC bus:** S-TWI0 (`i2c@7083000`, PL0/PL1) exposed through `i2c-dev` only.
+
+**The PHY supply needs userspace for now.** `VCC-3V3-PHY` is PMIC `dc1sw1`
+(I2C `0x36`, reg `0x11` bit 3). boot0 leaves it off and mainline has no
+driver for this PMIC (AXP318 per the schematic). `rootfs-overlay-debian-sd/`
+has a systemd oneshot, `opi4pro-eth-power`, that switches it on and
+re-probes the GMAC early in boot. A PMIC regulator driver would replace it.
+
+Other findings, not fixed here:
+- The board's DCXO is **26 MHz**. `pll-ref` reads 22.15 MHz (= 24 × 24/26) because the dtsi's `osc24M` is 24 MHz, so PLL-derived rates are 13/12 off.
+- Schematic OPi 4 Pro v1.3.2 shows the YT8531C with its own crystal, but this board takes the SoC's 25 MHz fanout (PH15), as the vendor dts says.
+
+These patches were written with the help of an AI coding assistant
+(Claude); each commit message says what was and wasn't tested. They carry
+no `Signed-off-by`.
 
 ## Nightly builds
 

@@ -17,12 +17,12 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 | path | what |
 |---|---|
-| `kernel/patches/` | patch series (39) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
+| `kernel/patches/` | patch series (42) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
 | `rootfs-overlay-debian-sd/` | Debian 13 SD-card setup for the mainline kernel: U-Boot script and `powervr` blacklist |
 | `configs/a733-orangepi4pro.config` | working kernel `.config` used for all board builds |
-| `aic-port/wfix/` | `sunxi-wlan` helper module source (out-of-tree, needed by the AIC8800 wifi/bt port) |
-| `aic-port/vendor-src/` | pristine vendor AIC8800 tree (bsp/fdrv/btlpm) to patch |
-| `aic-port/PATCHES.md` | every fix applied to the AIC8800 sources for kernel 7.3 — the patched /tmp sources were lost, this is the recovery doc |
+| `aic-port/src/` | AIC8800D80 Wi-Fi and Bluetooth drivers ported to 7.4 |
+| `aic-port/vendor-src/` | untouched vendor AIC8800 tree |
+| `aic-port/PATCHES.md` | what changed from the vendor AIC8800 sources |
 | `sunxi-drm-port/` | out-of-tree port of the vendor display stack (DE/TCON/HDMI) to kernel 7.4 — see `sunxi-drm-port/NOTES.md` for the Kconfig-emulation fix and build/deploy state |
 | `prebuilt/` | the exact deployed `.ko` set + `Image` (md5 `da253ed6`) + `dtbs/` (board dtb md5 `de54b62e`, `boot.scr`/`boot.cmd`) |
 | `rootfs-overlay/etc/` | Gentoo rootfs config we changed: `conf.d/modules` (`modules="sunxidrm aic8800_fdrv aic8800_btlpm"`), `modules-load.d/gpu.conf` (`sunxidrm`), `init.d/aic8800-bt` (BT attach service) |
@@ -74,7 +74,7 @@ The series was rebased from `f47d22362` onto `666539eecdf4` (7.4-rc3+, 2026-11-1
 
 **Out-of-tree modules:** these need work before they load on 7.4.
 - `sunxi-drm-port/` builds on 7.4 and drives HDMI (see below).
-- `aic-port/`: not rebuilt, because the patched sources were lost (see `aic-port/PATCHES.md`). It must be rebuilt for the new vermagic.
+- `aic-port/src/` builds on 7.4 and drives Wi-Fi and Bluetooth (see `aic-port/PATCHES.md`).
 
 ## SD-card boot and Ethernet (patches 0023–0039)
 
@@ -83,7 +83,7 @@ image) from an SD card, with the kernel built from this series. Works: SD
 rootfs, serial console, NVMe, **Ethernet** (100 Mb/s link, limited by the
 switch used; DHCP, ping and SSH). HDMI works at 1920x1080@60 with `sunxi-drm-port/`
 (framebuffer console, text and colours checked on a monitor). Gigabit is untested.
-Wi-Fi/BT and the GPU don't work yet.
+Wi-Fi works on 2.4 and 5 GHz networks, and Bluetooth scans for devices. The GPU doesn't work yet.
 
 | Patch | What |
 |---|---|

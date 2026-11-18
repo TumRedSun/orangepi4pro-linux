@@ -57,7 +57,7 @@
 #if IS_ENABLED(CONFIG_EXTCON)
 #include <linux/extcon.h>
 #include <linux/extcon-provider.h>
-#include "../drivers/extcon/extcon.h"
+#include "extcon_internal.h" /* copy of drivers/extcon/extcon.h */
 #endif
 
 #define DEFAULT_COLORSPACE_MODE HDMI_COLORSPACE_RGB

@@ -6,10 +6,10 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 > **This fork** rebases the kernel series from `f47d22362` (7.3.0) onto
 > `666539eecdf4`. See [Rebase to 7.4-rc3](#rebase-to-74-rc3) for what changed.
-> It also adds patches 0023–0035: **working Ethernet**, a **Debian SD-card
-> boot**, the **BL31 memory reservation**, the **AXP318W PMIC driver** and the
-> **26 MHz crystal fix** (see
-> [SD-card boot and Ethernet](#sd-card-boot-and-ethernet-patches-00230035)).
+> It also adds patches 0023–0039: **working Ethernet**, a **Debian SD-card
+> boot**, the **BL31 memory reservation**, the **AXP318W PMIC driver** the
+> **26 MHz crystal fix** and **HDMI** (see
+> [SD-card boot and Ethernet](#sd-card-boot-and-ethernet-patches-00230039)).
 > The `prebuilt/` artifacts and the module paths below still describe the
 > **7.3** build deployed on the board.
 
@@ -17,13 +17,13 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 | path | what |
 |---|---|
-| `kernel/patches/` | patch series (35) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
+| `kernel/patches/` | patch series (39) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
 | `rootfs-overlay-debian-sd/` | Debian 13 SD-card setup for the mainline kernel: U-Boot script and `powervr` blacklist |
 | `configs/a733-orangepi4pro.config` | working kernel `.config` used for all board builds |
 | `aic-port/wfix/` | `sunxi-wlan` helper module source (out-of-tree, needed by the AIC8800 wifi/bt port) |
 | `aic-port/vendor-src/` | pristine vendor AIC8800 tree (bsp/fdrv/btlpm) to patch |
 | `aic-port/PATCHES.md` | every fix applied to the AIC8800 sources for kernel 7.3 — the patched /tmp sources were lost, this is the recovery doc |
-| `sunxi-drm-port/` | out-of-tree port of the vendor display stack (DE/TCON/HDMI) to kernel 7.3 — see `sunxi-drm-port/NOTES.md` for the Kconfig-emulation fix and build/deploy state |
+| `sunxi-drm-port/` | out-of-tree port of the vendor display stack (DE/TCON/HDMI) to kernel 7.4 — see `sunxi-drm-port/NOTES.md` for the Kconfig-emulation fix and build/deploy state |
 | `prebuilt/` | the exact deployed `.ko` set + `Image` (md5 `da253ed6`) + `dtbs/` (board dtb md5 `de54b62e`, `boot.scr`/`boot.cmd`) |
 | `rootfs-overlay/etc/` | Gentoo rootfs config we changed: `conf.d/modules` (`modules="sunxidrm aic8800_fdrv aic8800_btlpm"`), `modules-load.d/gpu.conf` (`sunxidrm`), `init.d/aic8800-bt` (BT attach service) |
 
@@ -73,19 +73,17 @@ The series was rebased from `f47d22362` onto `666539eecdf4` (7.4-rc3+, 2026-11-1
 **Config drift:** `olddefconfig` turns `CONFIG_DRM_PANEL` from `y` to `m` and adds new upstream symbols. Nothing A733-specific changed.
 
 **Out-of-tree modules:** these need work before they load on 7.4.
-- `sunxi-drm-port/` **does not build on 7.4 yet**:
-  - `drm/drm_fb_helper.h` moved to `drm/clients/drm_fbdev_helper.h` (an include fix)
-  - mainline also removed `drm_plane_funcs.reset` / `drm_crtc_funcs.reset` (now `.atomic_create_state`), `__drm_atomic_helper_{plane,crtc}_reset` and `drm_simple_encoder_init`
-  - the vendor driver's subclassed-state reset functions need a real port, so **HDMI is unavailable on this base** until then
+- `sunxi-drm-port/` builds on 7.4 and drives HDMI (see below).
 - `aic-port/`: not rebuilt, because the patched sources were lost (see `aic-port/PATCHES.md`). It must be rebuilt for the new vermagic.
 
-## SD-card boot and Ethernet (patches 0023–0035)
+## SD-card boot and Ethernet (patches 0023–0039)
 
 Tested on an OrangePi 4 Pro booting Debian 13 (Orange Pi OS trixie server
 image) from an SD card, with the kernel built from this series. Works: SD
 rootfs, serial console, NVMe, **Ethernet** (100 Mb/s link, limited by the
-switch used; DHCP, ping and SSH). Gigabit, HDMI, Wi-Fi/BT and the GPU were
-not tested or don't work yet.
+switch used; DHCP, ping and SSH). HDMI works at 1920x1080@60 with `sunxi-drm-port/`
+(framebuffer console, text and colours checked on a monitor). Gigabit is untested.
+Wi-Fi/BT and the GPU don't work yet.
 
 | Patch | What |
 |---|---|
@@ -98,6 +96,10 @@ not tested or don't work yet.
 | 0029–0033 mfd, regulator | AXP318W PMIC support from the upstream series by Andre Przywara and Jerome Brunet, taken from [armbian/build#10712](https://github.com/armbian/build/pull/10712). 0033 is rebased onto 7.4 |
 | 0034 clk | `pll-ref` and the RTC `hosc` run from a new `dcxo` clock, set to 26 MHz on this board, so PLL-derived rates are correct |
 | 0035 dts | the SD dts uses the AXP318W: `SWOUT1` powers the Ethernet PHY and `SWOUT2` the SD card |
+| 0036 dtsi | the DE, VO-TOP, TCON-TV and HDMI nodes use the `/soc` bus's one-cell addresses |
+| 0037 dtsi | PCIe joins `PD_PCIE`, so genpd `sync_state` no longer powers it off under NVMe when the display driver binds |
+| 0038 dtsi | the DE output endpoint carries TCON index 4, as in the vendor DT |
+| 0039 dtsi | the HDMI PHY uses the real DCXO (26 MHz). With 24 MHz the pixel clock was about 8% fast |
 
 **`sun60i-a733-orangepi-4-pro-sd.dts`** (the NVMe board dts is unchanged):
 - **SD:** PF0–PF5 muxed; `uart0` no longer claims PF2/PF4 (SD lines); `broken-cd` (PF6 card-detect caused an RCU stall); `vmmc` from PMIC `SWOUT2` (else "no support for card's volts").
@@ -116,6 +118,10 @@ a 100 Mb/s link with DHCP and working ping. `pll-ref` reads 24 MHz, `pll-peri0`
 2400 MHz, the PHY clock 25 MHz and the SD clock 50 MHz. The RTC `DCXO_CTRL`
 frequency select reads 2 (26 MHz).
 
+**HDMI needs one more boot script setting.** With a monitor attached, the vendor
+U-Boot edits the DTB for its own display driver and corrupts this device tree, so
+the kernel panics. Set `setenv drm_debug 1` in the boot script to skip that edit.
+
 Booting with an initrd (for example Armbian) through the vendor U-Boot
 also needs, in the boot script, `setenv fdt_high 0xffffffff` and
 `setenv initrd_high 0xffffffff`, and a DTB with free space (`dtc -p`): U-Boot
@@ -126,7 +132,7 @@ way (github.com/ijiki16/build, branch `sun60iw2-mainline-edge`).
 Other findings, not fixed here:
 - Schematic OPi 4 Pro v1.3.2 shows the YT8531C with its own crystal and marks the SoC clock path as not fitted, but the vendor dts enables the SoC's 25 MHz fanout (PH15). Patch 0024 enables it too. Whether this board needs that clock is untested.
 
-Patches 0023–0028, 0034 and 0035 were written with the help of an AI coding
+Patches 0023–0028 and 0034–0039 were written with the help of an AI coding
 assistant (Claude). Their commit messages say what was tested, and they carry
 no `Signed-off-by`. Patches 0029–0033 keep their upstream authors and sign-offs.
 

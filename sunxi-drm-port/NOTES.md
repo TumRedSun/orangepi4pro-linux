@@ -1,4 +1,22 @@
-# sunxi-drm port (kernel 7.3, aarch64, A733)
+# sunxi-drm port (kernel 7.4, aarch64, A733)
+
+## 7.4 status
+
+Tested on an OrangePi 4 Pro with mainline 7.4-rc3+: 1920x1080@60 over HDMI, with a
+framebuffer console on `fb0`. Changes from the 7.3 port:
+
+- planes and CRTCs implement `.atomic_create_state` instead of `.reset`
+- the HDMI encoder uses `drm_encoder_init()`
+- `drm_client_setup()` starts the framebuffer console
+- the HDMI driver also matches the `allwinner,sun60i-a733` root compatible
+- vendor trace hooks are compiled out
+- `extcon_internal.h` is a copy of `drivers/extcon/extcon.h`, which the kernel headers
+  package does not ship
+
+The kernel needs patches 0036-0039 of this series, and the boot script must set
+`drm_debug=1` (see the top-level README).
+
+The rest of this file describes the original 7.3 port.
 
 Out-of-tree port of the vendor Allwinner display stack (DE v352 + TCON TV +
 DW HDMI 2.0) to mainline Linux 7.3. Build dir `src/`, `M=` style.

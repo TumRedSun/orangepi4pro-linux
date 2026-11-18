@@ -13,7 +13,7 @@
 #include <linux/dma-buf.h>
 #include <linux/dma-direction.h>
 #include <drm/drm.h>
-#include <drm/drm_fb_helper.h>
+#include <drm/clients/drm_fbdev_helper.h>
 #include <drm/drm_gem.h>
 #include <drm/drm_prime.h>
 

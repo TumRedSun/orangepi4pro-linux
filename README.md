@@ -124,7 +124,7 @@ writes `bootargs` and the initrd range into `/chosen` and hangs with
 way (github.com/ijiki16/build, branch `sun60iw2-mainline-edge`).
 
 Other findings, not fixed here:
-- Schematic OPi 4 Pro v1.3.2 shows the YT8531C with its own crystal, but this board takes the SoC's 25 MHz fanout (PH15), as the vendor dts says.
+- Schematic OPi 4 Pro v1.3.2 shows the YT8531C with its own crystal and marks the SoC clock path as not fitted, but the vendor dts enables the SoC's 25 MHz fanout (PH15). Patch 0024 enables it too. Whether this board needs that clock is untested.
 
 Patches 0023–0028, 0034 and 0035 were written with the help of an AI coding
 assistant (Claude). Their commit messages say what was tested, and they carry

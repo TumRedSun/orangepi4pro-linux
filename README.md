@@ -83,7 +83,7 @@ image) from an SD card, with the kernel built from this series. Works: SD
 rootfs, serial console, NVMe, **Ethernet** (100 Mb/s link, limited by the
 switch used; DHCP, ping and SSH). HDMI works at 1920x1080@60 with `sunxi-drm-port/`
 (framebuffer console, text and colours checked on a monitor). Gigabit is untested.
-Wi-Fi works on 2.4 and 5 GHz networks, and Bluetooth scans for devices. The GPU doesn't work yet.
+Wi-Fi works (tested on a 5 GHz WPA2 network), and Bluetooth scans for devices. The GPU doesn't work yet.
 
 | Patch | What |
 |---|---|

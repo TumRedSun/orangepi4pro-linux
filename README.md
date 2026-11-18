@@ -7,7 +7,7 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 > **This fork** rebases the kernel series from `f47d22362` (7.3.0) onto
 > `666539eecdf4`. See [Rebase to 7.4-rc3](#rebase-to-74-rc3) for what changed.
 > It also adds patches 0023–0039: **working Ethernet**, a **Debian SD-card
-> boot**, the **BL31 memory reservation**, the **AXP318W PMIC driver** the
+> boot**, the **BL31 memory reservation**, the **AXP318W PMIC driver**, the
 > **26 MHz crystal fix** and **HDMI** (see
 > [SD-card boot and Ethernet](#sd-card-boot-and-ethernet-patches-00230039)).
 > The `prebuilt/` artifacts and the module paths below still describe the

@@ -17,7 +17,7 @@ A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 
 | path | what |
 |---|---|
-| `kernel/patches/` | patch series (50) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
+| `kernel/patches/` | patch series (51) on top of upstream `666539eecdf4` (torvalds/linux), ordered — apply with `git am` |
 | `rootfs-overlay-debian-sd/` | Debian 13 SD-card setup for the mainline kernel: U-Boot script and `powervr` blacklist |
 | `configs/a733-orangepi4pro.config` | working kernel `.config` used for all board builds |
 | `aic-port/src/` | AIC8800D80 Wi-Fi and Bluetooth drivers ported to 7.4 |
@@ -86,6 +86,8 @@ switch used; DHCP, ping and SSH). HDMI works at 1920x1080@60 with `sunxi-drm-por
 Wi-Fi works (tested on a 5 GHz WPA2 network), and Bluetooth scans for devices. USB works at USB 2.0 speed, and the RTC and ADC work. The SPI flash reads reliably at 50 MHz with DMA (it is kept read-only). CPU frequency scaling, PWM, the hardware RNG and the GPU don't work yet.
 
 Run the hardware tests with `tests/run-on-board.sh <board-ip>`.
+
+To reach the board over a USB cable, see `usb-gadget/README.md`.
 
 To test kernels without reflashing, see `ab-boot/README.md`: A/B kernel slots with automatic fallback on the vendor U-Boot.
 

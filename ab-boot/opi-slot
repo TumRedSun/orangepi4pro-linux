@@ -1,0 +1,116 @@
+#!/bin/bash
+# opi-slot: try a new kernel without reflashing, with automatic fallback.
+#
+#   opi-slot status                     show the booted slot and the slot contents
+#   opi-slot try IMAGE.deb DTB.deb      snapshot the root, install the kernel there, arm the trial slot
+#   opi-slot confirm                    run at boot: promote a healthy trial, record a failed one
+#   opi-slot rollback                   make the previous good slot the good slot again
+#   opi-slot clean                      delete root snapshots that no slot uses
+#
+# U-Boot boots an armed trial slot once. If it does not confirm (panic, hang, no network),
+# the next boot uses the good slot. Each slot has its own Btrfs root snapshot, so the
+# fallback kernel always gets its own modules.
+set -euo pipefail
+B=/boot
+TOP=/run/opi-slot/top
+DTB=sun60i-a733-orangepi-4-pro-armbian.dtb
+say() { echo "opi-slot: $*"; }
+die() { say "$*" >&2; exit 1; }
+trial_state() { sed -n 's/^trial=//p' "$B/trial.txt" 2> /dev/null; }
+booted_slot() { sed -n 's/.*opi_slot=\([a-z]*\).*/\1/p' /proc/cmdline; }
+current_subvol() { findmnt -no FSROOT / | sed 's|^/||'; }
+slot_subvol() { sed -n 's/^subvol=//p' "$B/$1/slot.txt" 2> /dev/null; }
+mount_top() {
+	mkdir -p "$TOP"
+	mountpoint -q "$TOP" || mount -o subvolid=5 "$(findmnt -no SOURCE / | sed 's/\[.*//')" "$TOP"
+}
+
+cmd_status() {
+	say "booted slot: $(booted_slot), root subvolume: $(current_subvol)"
+	for s in good trial prev; do
+		[[ -d "$B/$s" ]] || continue
+		local state=""
+		[[ "$s" == trial ]] && state=" ($(trial_state))"
+		say "$s: subvolume $(slot_subvol "$s")${state}"
+	done
+	ls -d "$B"/failed-* 2> /dev/null | sed 's|^|opi-slot: failed trial kept in |' || true
+}
+
+cmd_try() {
+	(($# >= 1)) || die "usage: opi-slot try linux-image.deb [linux-dtb.deb]"
+	[[ "$(booted_slot)" == good ]] || die "boot the good slot first"
+	mount_top
+	local name="@trial-$(date +%Y%m%d-%H%M%S)" ver
+	btrfs -q subvolume snapshot "$TOP/$(current_subvol)" "$TOP/$name"
+	# --keep-directory-symlink keeps /lib -> usr/lib in the snapshot.
+	for deb in "$@"; do dpkg-deb --fsys-tarfile "$deb" | tar -x --keep-directory-symlink -C "$TOP/$name"; done
+	for l in bin lib sbin; do [[ -L "$TOP/$name/$l" ]] || die "/$l in $name is not a symlink"; done
+	ver="$(ls "$TOP/$name/boot" | sed -n 's/^vmlinuz-//p' | head -1)"
+	[[ -n "$ver" ]] || die "no kernel in $*"
+	[[ -f "$TOP/$name/boot/dtb-$ver/allwinner/$DTB" ]] || die "no $DTB in $*"
+	rm -rf "$B/trial"
+	mkdir -p "$B/trial"
+	cp "$TOP/$name/boot/vmlinuz-$ver" "$B/trial/Image"
+	cp "$TOP/$name/boot/dtb-$ver/allwinner/$DTB" "$B/trial/board.dtb"
+	find "$TOP/$name/boot" -mindepth 1 -delete # /boot is the FAT mount point
+	printf 'subvol=%s\n' "$name" > "$B/trial/slot.txt"
+	printf 'trial=armed\n' > "$B/trial.txt"
+	sync
+	say "armed $name with kernel $ver. Reboot to try it."
+}
+
+healthy() { # the boot reached multi-user.target and has a network route
+	# Not "systemctl is-system-running": it stays "starting" while this service runs.
+	local i
+	for i in $(seq 1 36); do
+		if systemctl is-active -q multi-user.target && ip route show default | grep -q .; then
+			return 0
+		fi
+		sleep 5
+	done
+	return 1
+}
+
+cmd_confirm() {
+	if [[ "$(booted_slot)" == trial ]]; then
+		if healthy; then
+			rm -rf "$B/prev"
+			mv "$B/good" "$B/prev"
+			mv "$B/trial" "$B/good"
+			rm -f "$B/trial.txt"
+			sync
+			say "trial $(slot_subvol good) is healthy: it is now the good slot"
+		else
+			say "trial is not healthy: the next boot uses the good slot"
+		fi
+	elif [[ "$(trial_state)" == tried ]]; then
+		mv "$B/trial" "$B/failed-$(date +%Y%m%d-%H%M%S)"
+		rm -f "$B/trial.txt"
+		sync
+		say "the trial kernel failed and the good slot booted"
+	fi
+}
+
+cmd_rollback() {
+	[[ -d "$B/prev" ]] || die "no previous slot"
+	mv "$B/good" "$B/rollback.tmp"
+	mv "$B/prev" "$B/good"
+	mv "$B/rollback.tmp" "$B/prev"
+	sync
+	say "good slot is now $(slot_subvol good). Reboot to use it."
+}
+
+cmd_clean() {
+	mount_top
+	local keep=" @ $(current_subvol) $(slot_subvol good) $(slot_subvol trial) $(slot_subvol prev) " s
+	btrfs subvolume list -o "$TOP" | awk '{print $NF}' | while read -r s; do
+		[[ "$keep" == *" $s "* ]] && continue
+		btrfs -q subvolume delete "$TOP/$s" && say "deleted $s"
+	done
+}
+
+[[ $EUID -eq 0 ]] || die "run as root"
+case "${1:-status}" in
+status | try | confirm | rollback | clean) cmd="cmd_$1"; shift || true; "$cmd" "$@" ;;
+*) die "unknown command: $1" ;;
+esac

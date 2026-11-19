@@ -87,6 +87,8 @@ Wi-Fi works (tested on a 5 GHz WPA2 network), and Bluetooth scans for devices. U
 
 Run the hardware tests with `tests/run-on-board.sh <board-ip>`.
 
+To test kernels without reflashing, see `ab-boot/README.md`: A/B kernel slots with automatic fallback on the vendor U-Boot.
+
 | Patch | What |
 |---|---|
 | 0023 dts | GMAC0 resets: `stmmaceth` = `RST_BUS_GMAC0_AXI`, `ahb` = `RST_BUS_GMAC0` (vendor BSP roles), so stmmac no longer pulses the bus reset after the glue was programmed |

@@ -189,9 +189,11 @@ def t_thermal():
     zones = glob.glob("/sys/class/thermal/thermal_zone*")
     if not zones:
         gap("no thermal zone")
-    temps = {read(z + "/type"): int(read(z + "/temp", "0")) / 1000 for z in zones}
+    temps = {read(z + "/type").replace("-thermal", ""): int(read(z + "/temp", "0")) / 1000 for z in zones}
     bad = {k: v for k, v in temps.items() if not 5 <= v <= 100}
     check(not bad, f"out of range: {bad}")
+    missing = {"cpu-little", "cpu-big", "gpu", "npu", "ddr"} - set(temps)
+    check(not missing, f"missing zones {sorted(missing)}")
     ok(", ".join(f"{k} {v:.0f}C" for k, v in sorted(temps.items())))
 
 

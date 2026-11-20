@@ -4,7 +4,6 @@ Backup of the mainline-kernel port for the OrangePi 4 Pro (Allwinner
 A733 / SUN60IW2). Target: mainline Linux **7.4-rc3+** (`666539eecdf4`,
 2026-11-16), aarch64, NVMe rootfs (Gentoo/OpenRC), serial console on ttyS0.
 
-> **This fork** rebases the kernel series from `f47d22362` (7.3.0) onto
 > `666539eecdf4`. See [Rebase to 7.4-rc3](#rebase-to-74-rc3) for what changed.
 > It also adds patches 0023–0039: **working Ethernet**, a **Debian SD-card
 > boot**, the **BL31 memory reservation**, the **AXP318W PMIC driver**, the

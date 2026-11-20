@@ -33,7 +33,7 @@
 #include <drm/drm_probe_helper.h>
 #include <drm/drm_simple_kms_helper.h>
 #include <drm/drm_property.h>
-#include <drm/drm_fb_helper.h>
+#include <drm/clients/drm_fbdev_helper.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 #include <drm/display/drm_dsc_helper.h>

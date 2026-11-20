@@ -1,7 +1,7 @@
-From a5463726f732c34af324ddd7059390aac04f15b7 Mon Sep 17 00:00:00 2001
+From 288e44cfd2bcef6933c690435c61f8cd5e4b2b4d Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Fri, 6 Nov 2026 16:43:03 +0000
-Subject: [PATCH 19/21] dts/a733-opi4pro: console=ttyS0 first - userspace kept
+Subject: [PATCH 19/39] dts/a733-opi4pro: console=ttyS0 first - userspace kept
  the UART dark with tty1-only
 
 ---
@@ -45,6 +45,3 @@ index 1a0371d58..f13f2d4a2 100644
  	bus-width = <4>;
  	status = "okay";
  };
--- 
-2.55.0
-

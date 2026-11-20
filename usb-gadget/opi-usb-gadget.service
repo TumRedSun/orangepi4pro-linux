@@ -1,0 +1,11 @@
+[Unit]
+Description=USB network and serial console on the blue OTG port
+After=sys-kernel-config.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/opi-usb-gadget
+
+[Install]
+WantedBy=usb-gadget.target

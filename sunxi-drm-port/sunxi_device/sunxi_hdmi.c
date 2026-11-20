@@ -1063,6 +1063,7 @@ static const struct of_device_id hdmi_plat_match[] = {
 	{ .compatible = "arm,sun50iw9p1", .data = &sun50i_hdmi },
 	{ .compatible = "arm,sun55iw3p1", .data = &sun55i_hdmi },
 	{ .compatible = "arm,sun60iw2p1", .data = &sun60i_hdmi },
+	{ .compatible = "allwinner,sun60i-a733", .data = &sun60i_hdmi },
 	{ },
 };
 

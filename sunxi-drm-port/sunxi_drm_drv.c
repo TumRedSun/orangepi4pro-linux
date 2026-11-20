@@ -16,8 +16,9 @@
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_drv.h>
-#include <drm/drm_fb_helper.h>
+#include <drm/clients/drm_fbdev_helper.h>
 #include <drm/drm_fbdev_dma.h>
+#include <drm/clients/drm_client_setup.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 0)
 #include <drm/drm_gem_cma_helper.h>
 #else
@@ -1300,6 +1301,13 @@ static int sunxi_drm_bind(struct device *dev)
 
 dev_register:
 	ret = drm_dev_register(drm, 0);
+	if (ret) {
+		DRM_ERROR("drm_dev_register failed: %d\n", ret);
+		goto mode_config_clean;
+	}
+
+	/* Framebuffer console on the HDMI output. */
+	drm_client_setup(drm, NULL);
 
 #if IS_ENABLED(CONFIG_PROC_FS)
 	ret = sunxi_drm_procfs_init(drm);

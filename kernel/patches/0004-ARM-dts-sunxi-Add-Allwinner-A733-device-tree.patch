@@ -1,7 +1,7 @@
-From 9a0c58622b70c006309abdc58149b89cc939b7f0 Mon Sep 17 00:00:00 2001
+From 0f334f298667dcaf14a8fff36ddc2b6f362cec82 Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Tue, 20 Oct 2026 19:31:28 +0000
-Subject: [PATCH 04/21] ARM: dts: sunxi: Add Allwinner A733 device tree
+Subject: [PATCH 04/39] ARM: dts: sunxi: Add Allwinner A733 device tree
 
 Add the sun60i-a733.dtsi describing the clock controllers (CCU,
 CPUPLL and the RTC's clock side), the PIO and R-PIO controllers,
@@ -204,10 +204,10 @@ index b35ac03d5..67c744fc3 100644
  then:
    properties:
 diff --git a/arch/arm64/boot/dts/allwinner/Makefile b/arch/arm64/boot/dts/allwinner/Makefile
-index aa21f58a4..5bae8941c 100644
+index d1f768dd6..d8e10033b 100644
 --- a/arch/arm64/boot/dts/allwinner/Makefile
 +++ b/arch/arm64/boot/dts/allwinner/Makefile
-@@ -67,3 +67,4 @@ dtb-$(CONFIG_ARCH_SUNXI) += sun55i-a527-cubie-a5e.dtb
+@@ -68,3 +68,4 @@ dtb-$(CONFIG_ARCH_SUNXI) += sun55i-a527-cubie-a5e.dtb
  dtb-$(CONFIG_ARCH_SUNXI) += sun55i-h728-x96qpro+.dtb
  dtb-$(CONFIG_ARCH_SUNXI) += sun55i-t527-avaota-a1.dtb
  dtb-$(CONFIG_ARCH_SUNXI) += sun55i-t527-orangepi-4a.dtb
@@ -627,7 +627,7 @@ index 3e8f95461..41483ec02 100644
  static SUNXI_CCU_MUX_WITH_GATE(fanout3_clk, "fanout3",
  		fanout_clk_parents, 0x1F3C,
 diff --git a/drivers/nvmem/sunxi_sid.c b/drivers/nvmem/sunxi_sid.c
-index ba14a7620..b7a5a0de9 100644
+index 51fb10285..75f62deb5 100644
 --- a/drivers/nvmem/sunxi_sid.c
 +++ b/drivers/nvmem/sunxi_sid.c
 @@ -211,6 +211,8 @@ static const struct of_device_id sunxi_sid_of_match[] = {
@@ -640,10 +640,10 @@ index ba14a7620..b7a5a0de9 100644
  	{ .compatible = "allwinner,sun50i-h5-sid", .data = &sun50i_a64_cfg },
  	{ .compatible = "allwinner,sun50i-h6-sid", .data = &sun50i_h6_cfg },
 diff --git a/drivers/rtc/rtc-sun6i.c b/drivers/rtc/rtc-sun6i.c
-index 7fc60880e..4eae95777 100644
+index 121a7f771..203dcb5d4 100644
 --- a/drivers/rtc/rtc-sun6i.c
 +++ b/drivers/rtc/rtc-sun6i.c
-@@ -868,6 +868,10 @@ static const struct of_device_id sun6i_rtc_dt_ids[] = {
+@@ -881,6 +881,10 @@ static const struct of_device_id sun6i_rtc_dt_ids[] = {
  		.data = (void *)RTC_LINEAR_DAY },
  	{ .compatible = "allwinner,sun50i-r329-rtc",
  		.data = (void *)RTC_LINEAR_DAY },
@@ -655,7 +655,7 @@ index 7fc60880e..4eae95777 100644
  };
  MODULE_DEVICE_TABLE(of, sun6i_rtc_dt_ids);
 diff --git a/drivers/thermal/sun8i_thermal.c b/drivers/thermal/sun8i_thermal.c
-index f3e65c9bc..cd90a692c 100644
+index 45a7a0687..684fd642a 100644
 --- a/drivers/thermal/sun8i_thermal.c
 +++ b/drivers/thermal/sun8i_thermal.c
 @@ -649,8 +649,8 @@ static int sun8i_ths_probe(struct platform_device *pdev)
@@ -688,10 +688,10 @@ index f3e65c9bc..cd90a692c 100644
  	.has_bus_clk_reset = true,
  	.has_mod_clk = true,
 diff --git a/drivers/watchdog/sunxi_wdt.c b/drivers/watchdog/sunxi_wdt.c
-index 3db34524e..065e59063 100644
+index a6500ebf2..ed83e068f 100644
 --- a/drivers/watchdog/sunxi_wdt.c
 +++ b/drivers/watchdog/sunxi_wdt.c
-@@ -283,6 +283,7 @@ static const struct of_device_id sunxi_wdt_dt_ids[] = {
+@@ -284,6 +284,7 @@ static const struct of_device_id sunxi_wdt_dt_ids[] = {
  	{ .compatible = "allwinner,sun6i-a31-wdt", .data = &sun6i_wdt_reg },
  	{ .compatible = "allwinner,sun20i-d1-wdt", .data = &sun20i_wdt_reg },
  	{ .compatible = "allwinner,sun55i-a523-wdt", .data = &sun55i_wdt_reg },
@@ -731,6 +731,3 @@ index d4c1a7346..000000000
 -#define CLK_RTC_MAX_NO                      (CLK_DCXO + 1)
 -
 -#endif /* _DT_BINDINGS_CLK_SUN60I_A733_RTC_H_ */
--- 
-2.55.0
-

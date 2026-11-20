@@ -1,0 +1,12 @@
+[connection]
+id=usb-gadget
+type=ethernet
+interface-name=usb0
+autoconnect=true
+
+[ipv4]
+address1=10.55.0.1/24
+method=shared
+
+[ipv6]
+method=disabled

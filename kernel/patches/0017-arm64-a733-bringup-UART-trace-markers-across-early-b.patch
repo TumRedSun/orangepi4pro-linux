@@ -1,7 +1,7 @@
-From 80c82777a58b1a9b6e75bbda269f6371b4d2ed19 Mon Sep 17 00:00:00 2001
+From 4bf2d8dc8f819c1c876884a9abac88e2a214b22c Mon Sep 17 00:00:00 2001
 From: tumredsun <tumredsun@localhost>
 Date: Thu, 22 Oct 2026 13:12:58 +0000
-Subject: [PATCH 17/21] arm64/a733 bringup: UART trace markers across early
+Subject: [PATCH 17/39] arm64/a733 bringup: UART trace markers across early
  boot
 
 Add temporary debug tracing for the A733 bring-up:
@@ -25,7 +25,7 @@ Add temporary debug tracing for the A733 bring-up:
  5 files changed, 98 insertions(+), 5 deletions(-)
 
 diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
-index 114b2ae84..375a80bdb 100644
+index 88ab6ab7a..f531f383b 100644
 --- a/arch/arm64/kernel/head.S
 +++ b/arch/arm64/kernel/head.S
 @@ -90,6 +90,8 @@
@@ -37,7 +37,7 @@ index 114b2ae84..375a80bdb 100644
  	bl	record_mmu_state
  	bl	preserve_boot_args
  
-@@ -232,6 +234,8 @@ SYM_CODE_END(preserve_boot_args)
+@@ -231,6 +233,8 @@ SYM_CODE_END(preserve_boot_args)
   *   x0 = __pa(KERNEL_START)
   */
  SYM_FUNC_START_LOCAL(__primary_switched)
@@ -46,7 +46,7 @@ index 114b2ae84..375a80bdb 100644
  	adr_l	x4, init_task
  	init_cpu_task x4, x5, x6
  
-@@ -257,6 +261,8 @@ SYM_FUNC_START_LOCAL(__primary_switched)
+@@ -256,6 +260,8 @@ SYM_FUNC_START_LOCAL(__primary_switched)
  	mov	x0, x20
  	bl	finalise_el2			// Prefer VHE if possible
  	ldp	x29, x30, [sp], #16
@@ -55,7 +55,7 @@ index 114b2ae84..375a80bdb 100644
  	bl	start_kernel
  	ASM_BUG()
  SYM_FUNC_END(__primary_switched)
-@@ -486,6 +492,8 @@ SYM_FUNC_START(__enable_mmu)
+@@ -485,6 +491,8 @@ SYM_FUNC_START(__enable_mmu)
  	dsb	sy
  	isb
  	set_sctlr_el1	x0
@@ -64,7 +64,7 @@ index 114b2ae84..375a80bdb 100644
  
  	ret
  SYM_FUNC_END(__enable_mmu)
-@@ -531,6 +539,9 @@ SYM_FUNC_START_LOCAL(__primary_switch)
+@@ -530,6 +538,9 @@ SYM_FUNC_START_LOCAL(__primary_switch)
  	adrp	x2, __pi_init_idmap_pg_dir
  	bl	__enable_mmu
  
@@ -190,7 +190,7 @@ index 761b14893..f682a9c5f 100644
  	return ptep;
  }
 diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 164816580..dc0e7935c 100644
+index e8d3f8f67..1f9ae3d6c 100644
 --- a/arch/arm64/kernel/setup.c
 +++ b/arch/arm64/kernel/setup.c
 @@ -279,8 +279,21 @@ u64 cpu_logical_map(unsigned int cpu)
@@ -287,7 +287,7 @@ index 164816580..dc0e7935c 100644
  static inline bool cpu_can_disable(unsigned int cpu)
  {
 diff --git a/init/main.c b/init/main.c
-index 13818a327..e052a2155 100644
+index 8a5c818a6..27ce0db7f 100644
 --- a/init/main.c
 +++ b/init/main.c
 @@ -115,6 +115,7 @@
@@ -298,7 +298,7 @@ index 13818a327..e052a2155 100644
  
  #define CREATE_TRACE_POINTS
  #include <trace/events/initcall.h>
-@@ -984,13 +985,25 @@ static void __init print_kernel_cmdline(const char *cmdline)
+@@ -1041,13 +1042,25 @@ static void __init print_kernel_cmdline(const char *cmdline)
  		pr_notice("%s%s\n", KERNEL_CMDLINE_PREFIX, cmdline);
  }
  
@@ -325,7 +325,7 @@ index 13818a327..e052a2155 100644
  	set_task_stack_end_magic(&init_task);
  	smp_setup_processor_id();
  	debug_objects_early_init();
-@@ -1008,7 +1021,9 @@ void start_kernel(void)
+@@ -1065,7 +1078,9 @@ void start_kernel(void)
  	boot_cpu_init();
  	page_address_init();
  	pr_notice("%s", linux_banner);
@@ -335,7 +335,7 @@ index 13818a327..e052a2155 100644
  	mm_core_init_early();
  	/* Static keys and static calls are needed by LSMs */
  	jump_label_init();
-@@ -1025,6 +1040,7 @@ void start_kernel(void)
+@@ -1082,6 +1097,7 @@ void start_kernel(void)
  	print_kernel_cmdline(saved_command_line);
  	/* parameters may set static keys */
  	parse_early_param();
@@ -343,14 +343,11 @@ index 13818a327..e052a2155 100644
  	after_dashes = parse_args("Booting kernel",
  				  static_command_line, __start___param,
  				  __stop___param - __start___param,
-@@ -1036,6 +1052,7 @@ void start_kernel(void)
- 	if (extra_init_args)
- 		parse_args("Setting extra init args", extra_init_args,
- 			   NULL, 0, -1, -1, NULL, set_init_arg);
+@@ -1093,6 +1109,7 @@ void start_kernel(void)
+ 	if (!IS_ERR_OR_NULL(after_dashes))
+ 		parse_args("Setting init args", after_dashes, NULL, 0, -1, -1,
+ 			   NULL, set_init_arg);
 +	a733_fix_putc('S'); a733_fix_putc('8');
  
  	/* Architectural and non-timekeeping rng init, before allocator init */
  	random_init_early(command_line);
--- 
-2.55.0
-

@@ -28,7 +28,7 @@ jobs:
           git clone --filter=blob:none --no-checkout \
             https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux
           cd linux
-          git checkout f47d22362
+          git checkout 666539eecdf4db623f5e3c3e55cf9f2dfad24aa4
 
       - name: Apply board patch series + config
         run: |

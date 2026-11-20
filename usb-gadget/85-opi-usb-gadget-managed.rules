@@ -1,0 +1,2 @@
+# NetworkManager ignores USB gadget network links by default. Manage the OTG link usb0.
+ENV{INTERFACE}=="usb0", ENV{DEVTYPE}=="gadget", ENV{NM_UNMANAGED}="0"

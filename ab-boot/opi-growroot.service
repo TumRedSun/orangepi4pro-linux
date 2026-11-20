@@ -1,0 +1,11 @@
+[Unit]
+Description=Grow the Btrfs root partition to fill the card (first boot)
+ConditionPathExists=!/var/lib/opi-slot/root-grown
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'dev=$(findmnt -no SOURCE / | sed "s/\\[.*//"); disk=/dev/$(lsblk -no PKNAME "$dev"); echo ",+" | sfdisk -q -N 2 --force --no-reread "$disk" || true; partx -u "$disk" || true; btrfs filesystem resize max /; mkdir -p /var/lib/opi-slot; touch /var/lib/opi-slot/root-grown'
+
+[Install]
+WantedBy=multi-user.target

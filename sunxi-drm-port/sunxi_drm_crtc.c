@@ -1033,27 +1033,25 @@ static void sunxi_atomic_plane_destroy_state(struct drm_plane *plane,
 	kfree(cstate);
 }
 
-static void sunxi_atomic_plane_reset(struct drm_plane *plane)
+static struct drm_plane_state *sunxi_atomic_plane_create_state(struct drm_plane *plane)
 {
 	struct display_channel_state *state;
+	struct drm_property_blob *blob;
 	int i;
 
-	if (plane->state) {
-		state = to_display_channel_state(plane->state);
-		sunxi_atomic_plane_destroy_state(plane, plane->state);
-	} else {
-		kfree(state);
-	}
 	state = kzalloc(sizeof(*state), GFP_KERNEL);
-	if (!state) {
-		DRM_ERROR("%s fail, no mem\n", __FUNCTION__);
-		return;
-	}
+	if (!state)
+		return ERR_PTR(-ENOMEM);
 
 	/* prepare for pqd */
-	state->frontend_blob = drm_property_create_blob(plane->dev, sizeof(struct de_frontend_data), NULL);
+	blob = drm_property_create_blob(plane->dev, sizeof(struct de_frontend_data), NULL);
+	if (IS_ERR(blob)) {
+		kfree(state);
+		return ERR_CAST(blob);
+	}
+	state->frontend_blob = blob;
 
-	__drm_atomic_helper_plane_reset(plane, &state->base);
+	__drm_atomic_helper_plane_state_init(&state->base, plane);
 	for (i = 0; i < MAX_LAYER_NUM_PER_CHN - 1; i++) {
 		state->alpha[i] = DRM_BLEND_ALPHA_OPAQUE;
 		state->pixel_blend_mode[i] = DRM_MODE_BLEND_PREMULTI;
@@ -1063,6 +1061,8 @@ static void sunxi_atomic_plane_reset(struct drm_plane *plane)
 	state->color_range = DE_COLOR_RANGE_DEFAULT;
 	state->fake_layer0 = false;
 	state->layer_id = COMMIT_ALL_LAYER;
+
+	return &state->base;
 }
 
 static bool sunxi_plane_format_mod_supported(struct drm_plane *plane, u32 format, u64 modifier)
@@ -1091,7 +1091,7 @@ static const struct drm_plane_funcs sunxi_plane_funcs = {
 	.update_plane = drm_atomic_helper_update_plane,
 	.disable_plane = drm_atomic_helper_disable_plane,
 	.destroy = drm_plane_cleanup,
-	.reset = sunxi_atomic_plane_reset,
+	.atomic_create_state = sunxi_atomic_plane_create_state,
 	.atomic_duplicate_state = sunxi_atomic_plane_duplicate_state,
 	.atomic_destroy_state = sunxi_atomic_plane_destroy_state,
 	.atomic_set_property = sunxi_atomic_plane_set_property,
@@ -1799,13 +1799,25 @@ static void sunxi_crtc_destroy_state(struct drm_crtc *crtc,
 	kfree(state);
 }
 
-static void sunxi_crtc_reset(struct drm_crtc *crtc)
+static struct drm_crtc_state *sunxi_crtc_create_state(struct drm_crtc *crtc)
 {
-	struct sunxi_crtc_state *state = kzalloc(sizeof(*state), GFP_KERNEL);
 	struct sunxi_drm_crtc *scrtc = to_sunxi_crtc(crtc);
+	struct sunxi_crtc_state *state;
+	struct drm_property_blob *blob;
 
-	if (crtc->state)
-		sunxi_crtc_destroy_state(crtc, crtc->state);
+	state = kzalloc(sizeof(*state), GFP_KERNEL);
+	if (!state)
+		return ERR_PTR(-ENOMEM);
+
+	/* prepare for pqd */
+	blob = drm_property_create_blob(crtc->dev, sizeof(struct de_backend_data), NULL);
+	if (IS_ERR(blob)) {
+		kfree(state);
+		return ERR_CAST(blob);
+	}
+	state->backend_blob = blob;
+
+	__drm_atomic_helper_crtc_state_init(&state->base, crtc);
 	state->px_fmt_space = DE_FORMAT_SPACE_RGB;
 	state->yuv_sampling = DE_YUV444;
 	state->eotf = DE_EOTF_BT709;
@@ -1818,10 +1830,7 @@ static void sunxi_crtc_reset(struct drm_crtc *crtc)
 	state->excfg.saturation = 50;
 	state->excfg.hue = scrtc->hue_default_value;
 
-	/* prepare for pqd */
-	state->backend_blob = drm_property_create_blob(crtc->dev, sizeof(struct de_backend_data), NULL);
-
-	__drm_atomic_helper_crtc_reset(crtc, &state->base);
+	return &state->base;
 }
 
 u64 sunxi_get_fpsraw_and_vblankcnt(struct drm_crtc *crtc)
@@ -2304,7 +2313,7 @@ static const struct drm_crtc_funcs sunxi_crtc_funcs = {
 	.set_config = drm_atomic_helper_set_config,
 	.page_flip = drm_atomic_helper_page_flip,
 	.destroy = drm_crtc_cleanup,
-	.reset = sunxi_crtc_reset,
+	.atomic_create_state = sunxi_crtc_create_state,
 	.atomic_print_state = sunxi_crtc_atomic_print_state,
 	.atomic_duplicate_state = sunxi_crtc_duplicate_state,
 	.atomic_destroy_state = sunxi_crtc_destroy_state,

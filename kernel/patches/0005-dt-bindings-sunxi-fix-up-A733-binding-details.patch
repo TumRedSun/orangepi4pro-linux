@@ -1,7 +1,7 @@
-From 82831898d32b4a11fbe4898709e7c5c66c99ab8a Mon Sep 17 00:00:00 2001
-From: tumredsun <tumredsun@localhost>
-Date: Tue, 20 Oct 2026 19:57:01 +0000
-Subject: [PATCH 05/21] dt-bindings: sunxi: fix up A733 binding details
+From 3d37ecc31ec612077facbaa3da9eb23b762a9c46 Mon Sep 17 00:00:00 2001
+From: rebase <rebase@localhost>
+Date: Tue, 17 Nov 2026 15:29:59 +0000
+Subject: [PATCH 05/39] dt-bindings: sunxi: fix up A733 binding details
 
 - declare clocks/clock-names at the top level of the CCU binding so
   additionalProperties: false works as intended
@@ -11,22 +11,26 @@ Subject: [PATCH 05/21] dt-bindings: sunxi: fix up A733 binding details
 - the A733 watchdog takes a single clock input
 - register the Orange Pi 4 Pro board compatible and extend the
   Maintainers file pattern to sun60i/sun30i
+
+[rebase onto 7.4-rc3+: the A733 pinctrl binding is now the shared upstream
+ allwinner,sun55i-a523-pinctrl.yaml; its fix (main PIO has 10 IRQ banks,
+ matching the driver irq_banks = 10) is carried there instead.]
 ---
  .../devicetree/bindings/arm/sunxi.yaml        |  5 +
  .../clock/allwinner,sun60i-a733-ccu.yaml      | 99 +++++++++----------
- .../allwinner,sun60i-a733-pinctrl.yaml        |  8 +-
+ .../allwinner,sun55i-a523-pinctrl.yaml        | 15 ++-
  .../bindings/rtc/allwinner,sun6i-a31-rtc.yaml | 30 ++++++
  .../thermal/allwinner,sun8i-a83t-ths.yaml     | 22 ++++-
  .../watchdog/allwinner,sun4i-a10-wdt.yaml     | 79 ++++++++-------
  MAINTAINERS                                   |  2 +-
  .../arm64/boot/dts/allwinner/sun60i-a733.dtsi |  1 +
- 8 files changed, 153 insertions(+), 93 deletions(-)
+ 8 files changed, 161 insertions(+), 92 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/arm/sunxi.yaml b/Documentation/devicetree/bindings/arm/sunxi.yaml
-index f04db28c6..1581d80d6 100644
+index 28437c47a..6257870e2 100644
 --- a/Documentation/devicetree/bindings/arm/sunxi.yaml
 +++ b/Documentation/devicetree/bindings/arm/sunxi.yaml
-@@ -1013,6 +1013,11 @@ properties:
+@@ -1023,6 +1023,11 @@ properties:
            - const: xunlong,orangepi-4a
            - const: allwinner,sun55i-t527
  
@@ -194,37 +198,44 @@ index c2ff84a65..e608c564e 100644
          #clock-cells = <1>;
          #reset-cells = <1>;
      };
-diff --git a/Documentation/devicetree/bindings/pinctrl/allwinner,sun60i-a733-pinctrl.yaml b/Documentation/devicetree/bindings/pinctrl/allwinner,sun60i-a733-pinctrl.yaml
-index c94df5e9c..0bd6a00c4 100644
---- a/Documentation/devicetree/bindings/pinctrl/allwinner,sun60i-a733-pinctrl.yaml
-+++ b/Documentation/devicetree/bindings/pinctrl/allwinner,sun60i-a733-pinctrl.yaml
-@@ -33,8 +33,8 @@ properties:
-     maxItems: 1
- 
-   interrupts:
--    minItems: 2
--    maxItems: 11
-+    minItems: 1
-+    maxItems: 10
-     description:
-       One interrupt per external interrupt bank supported on the
-       controller, sorted by bank number ascending order.
-@@ -130,8 +130,8 @@ allOf:
-     then:
-       properties:
-         interrupts:
--          minItems: 11
--          maxItems: 11
-+          minItems: 10
-+          maxItems: 10
- 
+diff --git a/Documentation/devicetree/bindings/pinctrl/allwinner,sun55i-a523-pinctrl.yaml b/Documentation/devicetree/bindings/pinctrl/allwinner,sun55i-a523-pinctrl.yaml
+index d7d0ba32c..b4a2b2d68 100644
+--- a/Documentation/devicetree/bindings/pinctrl/allwinner,sun55i-a523-pinctrl.yaml
++++ b/Documentation/devicetree/bindings/pinctrl/allwinner,sun55i-a523-pinctrl.yaml
+@@ -126,9 +126,7 @@ allOf:
    - if:
        properties:
+         compatible:
+-          enum:
+-            - allwinner,sun55i-a523-pinctrl
+-            - allwinner,sun60i-a733-pinctrl
++          const: allwinner,sun55i-a523-pinctrl
+ 
+     then:
+       properties:
+@@ -136,6 +134,17 @@ allOf:
+           minItems: 11
+           maxItems: 11
+ 
++  - if:
++      properties:
++        compatible:
++          const: allwinner,sun60i-a733-pinctrl
++
++    then:
++      properties:
++        interrupts:
++          minItems: 10
++          maxItems: 10
++
+   - if:
+       properties:
+         compatible:
 diff --git a/Documentation/devicetree/bindings/rtc/allwinner,sun6i-a31-rtc.yaml b/Documentation/devicetree/bindings/rtc/allwinner,sun6i-a31-rtc.yaml
-index f2b91186e..9c3e4f284 100644
+index ebe35f893..87e9d96b7 100644
 --- a/Documentation/devicetree/bindings/rtc/allwinner,sun6i-a31-rtc.yaml
 +++ b/Documentation/devicetree/bindings/rtc/allwinner,sun6i-a31-rtc.yaml
-@@ -26,6 +26,7 @@ properties:
+@@ -27,6 +27,7 @@ properties:
            - allwinner,sun50i-h6-rtc
            - allwinner,sun50i-h616-rtc
            - allwinner,sun50i-r329-rtc
@@ -232,7 +243,7 @@ index f2b91186e..9c3e4f284 100644
        - items:
            - const: allwinner,sun50i-a64-rtc
            - const: allwinner,sun8i-h3-rtc
-@@ -165,6 +166,7 @@ allOf:
+@@ -168,6 +169,7 @@ allOf:
                - allwinner,sun8i-r40-rtc
                - allwinner,sun50i-h616-rtc
                - allwinner,sun50i-r329-rtc
@@ -240,7 +251,7 @@ index f2b91186e..9c3e4f284 100644
  
      then:
        properties:
-@@ -176,6 +178,33 @@ allOf:
+@@ -179,6 +181,33 @@ allOf:
          interrupts:
            minItems: 2
  
@@ -274,7 +285,7 @@ index f2b91186e..9c3e4f284 100644
    - if:
        properties:
          compatible:
-@@ -183,6 +212,7 @@ allOf:
+@@ -186,6 +215,7 @@ allOf:
              enum:
                - allwinner,sun50i-h616-rtc
                - allwinner,sun50i-r329-rtc
@@ -420,10 +431,10 @@ index 67c744fc3..3d2361335 100644
  unevaluatedProperties: false
  
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 54b5106ed..83b990e76 100644
+index d73899016..9814a5cf4 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -2529,7 +2529,7 @@ F:	drivers/pinctrl/sunxi/
+@@ -2606,7 +2606,7 @@ F:	drivers/pinctrl/sunxi/
  F:	drivers/soc/sunxi/
  N:	allwinner
  N:	sun[x456789]i
@@ -444,6 +455,3 @@ index f09621b6c..24596f040 100644
  		};
  
  		r_pio: pinctrl@7025000 {
--- 
-2.55.0
-

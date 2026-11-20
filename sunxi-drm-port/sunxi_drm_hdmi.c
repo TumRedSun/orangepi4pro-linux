@@ -44,7 +44,7 @@
 #if IS_ENABLED(CONFIG_EXTCON)
 #include <linux/extcon.h>
 #include <linux/extcon-provider.h>
-#include "../drivers/extcon/extcon.h"
+#include "extcon_internal.h" /* copy of drivers/extcon/extcon.h */
 #endif
 
 #include <media/cec.h>
@@ -2944,6 +2944,10 @@ sunxi_hdmi_connector_helper_funcs = {
 	.mode_valid = _sunxi_drm_hdmi_mode_valid,
 };
 
+static const struct drm_encoder_funcs sunxi_hdmi_encoder_funcs = {
+	.destroy = drm_encoder_cleanup,
+};
+
 static const struct drm_encoder_helper_funcs
 sunxi_hdmi_encoder_helper_funcs = {
 	.atomic_disable		= _sunxi_drm_hdmi_disable,
@@ -3443,7 +3447,8 @@ static int _sunxi_hdmi_init_drm(struct sunxi_drm_hdmi *hdmi)
 
 	/* drm encoder register */
 	drm_encoder_helper_add(encoder, &sunxi_hdmi_encoder_helper_funcs);
-	ret = drm_simple_encoder_init(drm, encoder, DRM_MODE_ENCODER_TMDS);
+	ret = drm_encoder_init(drm, encoder, &sunxi_hdmi_encoder_funcs,
+			       DRM_MODE_ENCODER_TMDS, NULL);
 	if (ret != 0) {
 		hdmi_err("drm hdmi register encoder failed\n");
 		return -1;
